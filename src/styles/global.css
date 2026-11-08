@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-serif: "Noto Serif SC", "Songti SC", Georgia, serif;
+  --font-sans: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "Geist Mono", "SF Mono", Menlo, monospace;
+
+  --color-bg: #fbfaf8;
+  --color-bg-dark: #141312;
+  --color-fg: #292524;
+  --color-fg-dark: #e7e5e4;
+  --color-muted: #78716b;
+  --color-muted-dark: #a8a29e;
+  --color-accent: #7c5c3e;
+  --color-accent-dark: #d4a373;
+  --color-border: #e7e2dc;
+  --color-border-dark: #2a2725;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+.dark ::selection {
+  background: var(--color-accent-dark);
+  color: #141312;
+}
+
+/* 文章正文排版 */
+.prose-blog h2 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+.prose-blog h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.prose-blog p {
+  margin: 1rem 0;
+  line-height: 1.9;
+}
+.prose-blog a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dark .prose-blog a {
+  color: var(--color-accent-dark);
+}
+.prose-blog ul, .prose-blog ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.9;
+}
+.prose-blog ul { list-style: disc; }
+.prose-blog ol { list-style: decimal; }
+.prose-blog blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1rem;
+  color: var(--color-muted);
+  margin: 1.5rem 0;
+}
+.dark .prose-blog blockquote {
+  border-color: var(--color-border-dark);
+  color: var(--color-muted-dark);
+}
+.prose-blog code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: rgba(120, 113, 107, 0.12);
+  padding: 0.15em 0.4em;
+  border-radius: 0.3em;
+}
+.prose-blog pre {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+.prose-blog pre code {
+  background: transparent;
+  padding: 0;
+}
+.prose-blog img {
+  border-radius: 0.5rem;
+  margin: 1.5rem auto;
+}
+.prose-blog hr {
+  border-color: var(--color-border);
+  margin: 2.5rem 0;
+}
+.dark .prose-blog hr {
+  border-color: var(--color-border-dark);
+}

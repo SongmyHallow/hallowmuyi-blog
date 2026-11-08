@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+---
+
+<Base title="文章">
+  <h1 class="font-serif text-2xl font-semibold mb-8">全部文章</h1>
+  <ul class="space-y-5">
+    {posts.map((post) => (
+      <li class="group">
+        <a href={`/blog/${post.id}`} class="flex items-baseline justify-between gap-4">
+          <span class="font-serif group-hover:text-accent dark:group-hover:text-accent-dark transition-colors">
+            {post.data.title}
+          </span>
+          <time class="text-sm text-muted dark:text-muted-dark shrink-0 font-mono">
+            {formatDate(post.data.date)}
+          </time>
+        </a>
+        {post.data.description && (
+          <p class="text-sm text-muted dark:text-muted-dark mt-1">{post.data.description}</p>
+        )}
+      </li>
+    ))}
+  </ul>
+</Base>
