@@ -1,0 +1,218 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="管理">
+  <div id="app">
+    <!-- 登录视图 -->
+    <div id="login-view" class="hidden max-w-sm mx-auto mt-16">
+      <h1 class="text-2xl font-bold mb-6">管理员登录</h1>
+      <form id="login-form" class="space-y-4">
+        <input
+          type="password"
+          id="password"
+          placeholder="管理密码"
+          required
+          class="w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent outline-none focus:border-accent dark:focus:border-accent-dark"
+        />
+        <button
+          type="submit"
+          class="w-full py-2 rounded bg-accent text-white dark:bg-accent-dark dark:text-bg-dark hover:opacity-90 transition-opacity cursor-pointer"
+        >登录</button>
+        <p id="login-error" class="text-sm text-red-600 dark:text-red-400 hidden">密码错误</p>
+      </form>
+    </div>
+
+    <!-- 管理视图 -->
+    <div id="admin-view" class="hidden">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold">文章管理</h1>
+        <div class="flex gap-4 text-sm">
+          <button id="btn-new" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 新文章</button>
+          <button id="btn-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
+        </div>
+      </div>
+      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后约 1 分钟自动部署上线。</p>
+
+      <ul id="post-list" class="space-y-3 mb-12"></ul>
+
+      <!-- 编辑器 -->
+      <form id="editor" class="hidden space-y-4 border-t border-border dark:border-border-dark pt-8">
+        <h2 id="editor-title" class="text-lg font-semibold">新文章</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">slug（URL 用，小写字母/数字/连字符）</span>
+            <input id="f-slug" required pattern="[a-z0-9][a-z0-9-]*"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent font-mono text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">日期</span>
+            <input id="f-date" type="date" required
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+        </div>
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">标题</span>
+          <input id="f-title" required
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent outline-none focus:border-accent dark:focus:border-accent-dark" />
+        </label>
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">摘要（可选）</span>
+          <input id="f-desc"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+        </label>
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">标签（逗号分隔，可选）</span>
+          <input id="f-tags" placeholder="随笔, 技术"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+        </label>
+        <label class="flex items-center gap-2 text-sm text-muted dark:text-muted-dark">
+          <input id="f-draft" type="checkbox" class="accent-[#7c5c3e]" /> 草稿（不公开显示）
+        </label>
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">正文（Markdown）</span>
+          <textarea id="f-body" required rows="18"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent font-mono text-sm leading-relaxed outline-none focus:border-accent dark:focus:border-accent-dark"></textarea>
+        </label>
+        <div class="flex items-center gap-4">
+          <button type="submit" id="btn-save"
+            class="px-5 py-2 rounded bg-accent text-white dark:bg-accent-dark dark:text-bg-dark hover:opacity-90 transition-opacity cursor-pointer">保存并发布</button>
+          <button type="button" id="btn-cancel" class="text-sm text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">取消</button>
+          <span id="save-status" class="text-sm text-muted dark:text-muted-dark"></span>
+        </div>
+      </form>
+    </div>
+
+    <p id="loading" class="text-muted dark:text-muted-dark">加载中…</p>
+  </div>
+
+  <script is:inline>
+    const $ = (id) => document.getElementById(id);
+    const views = { login: $('login-view'), admin: $('admin-view'), loading: $('loading') };
+    let editingSlug = null; // null = 新建
+
+    function show(name) {
+      views.login.classList.toggle('hidden', name !== 'login');
+      views.admin.classList.toggle('hidden', name !== 'admin');
+      views.loading.classList.toggle('hidden', name !== 'loading');
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts,
+      });
+      if (res.status === 401 && path !== '/api/login') { show('login'); throw new Error('unauthorized'); }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function today() { return new Date().toISOString().slice(0, 10); }
+
+    async function loadList() {
+      const { posts } = await api('/api/posts');
+      const ul = $('post-list');
+      ul.innerHTML = '';
+      for (const p of posts.sort((a, b) => b.name.localeCompare(a.name))) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-4';
+        li.innerHTML = `
+          <a href="/blog/${p.slug}" target="_blank" class="font-mono text-sm hover:text-accent dark:hover:text-accent-dark transition-colors truncate">${p.slug}</a>
+          <span class="flex gap-3 text-sm shrink-0">
+            <button data-edit="${p.slug}" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑</button>
+            <button data-del="${p.slug}" class="text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer">删除</button>
+          </span>`;
+        ul.appendChild(li);
+      }
+      ul.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => openEditor(b.dataset.edit)));
+      ul.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => del(b.dataset.del)));
+    }
+
+    function openEditor(slug) {
+      editingSlug = slug ?? null;
+      $('editor-title').textContent = slug ? `编辑：${slug}` : '新文章';
+      $('f-slug').disabled = !!slug;
+      $('save-status').textContent = '';
+      $('editor').classList.remove('hidden');
+      if (!slug) {
+        $('f-slug').value = '';
+        $('f-title').value = '';
+        $('f-date').value = today();
+        $('f-desc').value = '';
+        $('f-tags').value = '';
+        $('f-draft').checked = false;
+        $('f-body').value = '';
+      } else {
+        api(`/api/posts/${slug}`).then(({ post }) => {
+          $('f-slug').value = slug;
+          $('f-title').value = post.title;
+          $('f-date').value = post.date;
+          $('f-desc').value = post.description || '';
+          $('f-tags').value = post.tags.join(', ');
+          $('f-draft').checked = post.draft;
+          $('f-body').value = post.body.trim();
+        });
+      }
+      $('editor').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function del(slug) {
+      if (!confirm(`确定删除「${slug}」？此操作会把文件从仓库移除。`)) return;
+      await api(`/api/posts/${slug}`, { method: 'DELETE' });
+      await loadList();
+    }
+
+    $('login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      $('login-error').classList.add('hidden');
+      try {
+        await api('/api/login', { method: 'POST', body: JSON.stringify({ password: $('password').value }) });
+        show('admin');
+        await loadList();
+      } catch {
+        $('login-error').classList.remove('hidden');
+      }
+    };
+
+    $('btn-new').onclick = () => openEditor(null);
+    $('btn-cancel').onclick = () => $('editor').classList.add('hidden');
+    $('btn-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
+
+    $('editor').onsubmit = async (e) => {
+      e.preventDefault();
+      $('btn-save').disabled = true;
+      $('save-status').textContent = '提交中…';
+      const post = {
+        title: $('f-title').value,
+        date: $('f-date').value,
+        description: $('f-desc').value || undefined,
+        tags: $('f-tags').value.split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+        draft: $('f-draft').checked,
+        body: $('f-body').value,
+      };
+      try {
+        if (editingSlug) {
+          await api(`/api/posts/${editingSlug}`, { method: 'PUT', body: JSON.stringify({ post }) });
+        } else {
+          await api('/api/posts', { method: 'POST', body: JSON.stringify({ slug: $('f-slug').value, post }) });
+        }
+        $('save-status').textContent = '已提交，约 1 分钟后上线';
+        await loadList();
+      } catch (err) {
+        $('save-status').textContent = '失败：' + err.message;
+      } finally {
+        $('btn-save').disabled = false;
+      }
+    };
+
+    // 初始化：探测登录态
+    (async () => {
+      try {
+        await api('/api/posts');
+        show('admin');
+        await loadList();
+      } catch { /* 未登录，show('login') 已由 api() 处理 */ }
+    })();
+  </script>
+</Base>
