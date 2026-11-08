@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Giscus from '../../components/Giscus.astro';
 import { getCollection, render } from 'astro:content';
 import { postMeta, formatDate } from '../../utils/postMeta';
 
@@ -56,5 +57,6 @@ const { words, minutes } = postMeta(post.body ?? '');
         </a>
       ) : <span />}
     </nav>
+    <Giscus />
   </article>
 </Base>
