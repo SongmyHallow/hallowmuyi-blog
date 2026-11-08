@@ -29,6 +29,7 @@ import Base from '../../layouts/Base.astro';
         <h1 class="text-2xl font-bold">文章管理</h1>
         <div class="flex gap-4 text-sm">
           <button id="btn-new" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 新文章</button>
+          <button id="btn-about" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑关于页</button>
           <button id="btn-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
         </div>
       </div>
@@ -39,6 +40,7 @@ import Base from '../../layouts/Base.astro';
       <!-- 编辑器 -->
       <form id="editor" class="hidden space-y-4 border-t border-border dark:border-border-dark pt-8">
         <h2 id="editor-title" class="text-lg font-semibold">新文章</h2>
+        <div id="post-fields" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label class="block text-sm">
             <span class="text-muted dark:text-muted-dark">slug（URL 用，小写字母/数字/连字符）</span>
@@ -69,6 +71,7 @@ import Base from '../../layouts/Base.astro';
         <label class="flex items-center gap-2 text-sm text-muted dark:text-muted-dark">
           <input id="f-draft" type="checkbox" class="accent-[#7c5c3e]" /> 草稿（不公开显示）
         </label>
+        </div>
         <label class="block text-sm">
           <span class="text-muted dark:text-muted-dark">正文（Markdown）</span>
           <textarea id="f-body" required rows="18"
@@ -90,6 +93,7 @@ import Base from '../../layouts/Base.astro';
     const $ = (id) => document.getElementById(id);
     const views = { login: $('login-view'), admin: $('admin-view'), loading: $('loading') };
     let editingSlug = null; // null = 新建
+    let aboutMode = false; // true = 编辑关于页
 
     function show(name) {
       views.login.classList.toggle('hidden', name !== 'login');
@@ -131,6 +135,10 @@ import Base from '../../layouts/Base.astro';
 
     function openEditor(slug) {
       editingSlug = slug ?? null;
+      aboutMode = false;
+      $('post-fields').classList.remove('hidden');
+      ['f-slug', 'f-title', 'f-date'].forEach((id) => ($(id).required = true));
+      $('f-body').required = true;
       $('editor-title').textContent = slug ? `编辑：${slug}` : '新文章';
       $('f-slug').disabled = !!slug;
       $('save-status').textContent = '';
@@ -175,7 +183,22 @@ import Base from '../../layouts/Base.astro';
       }
     };
 
+    function openAbout() {
+      editingSlug = null;
+      aboutMode = true;
+      $('post-fields').classList.add('hidden');
+      ['f-slug', 'f-title', 'f-date'].forEach((id) => ($(id).required = false));
+      $('editor-title').textContent = '编辑关于页';
+      $('save-status').textContent = '';
+      $('editor').classList.remove('hidden');
+      api('/api/about').then(({ body }) => {
+        $('f-body').value = body.trim();
+      });
+      $('editor').scrollIntoView({ behavior: 'smooth' });
+    }
+
     $('btn-new').onclick = () => openEditor(null);
+    $('btn-about').onclick = openAbout;
     $('btn-cancel').onclick = () => $('editor').classList.add('hidden');
     $('btn-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
 
@@ -183,6 +206,17 @@ import Base from '../../layouts/Base.astro';
       e.preventDefault();
       $('btn-save').disabled = true;
       $('save-status').textContent = '提交中…';
+      if (aboutMode) {
+        try {
+          await api('/api/about', { method: 'PUT', body: JSON.stringify({ body: $('f-body').value }) });
+          $('save-status').textContent = '已提交，约 1 分钟后上线';
+        } catch (err) {
+          $('save-status').textContent = '失败：' + err.message;
+        } finally {
+          $('btn-save').disabled = false;
+        }
+        return;
+      }
       const post = {
         title: $('f-title').value,
         date: $('f-date').value,

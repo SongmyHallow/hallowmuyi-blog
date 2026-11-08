@@ -7,7 +7,7 @@ export async function GET(context: APIContext) {
     .filter((p) => !p.data.draft)
     .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
   return rss({
-    title: 'hallowmuyi',
+    title: 'MUYI BLOG',
     description: '记录与思考的角落',
     site: context.site!,
     items: posts.map((p) => ({

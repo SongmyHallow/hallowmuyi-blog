@@ -76,9 +76,9 @@ export async function listPosts(env: Env): Promise<PostFile[]> {
     .map((f) => ({ name: f.name, slug: f.name.replace(/\.md$/, ''), sha: f.sha }));
 }
 
-export async function getPost(env: Env, slug: string): Promise<{ sha: string; content: string }> {
+export async function getFile(env: Env, path: string): Promise<{ sha: string; content: string }> {
   const res = await fetch(
-    `${GH_API}/repos/${env.GITHUB_REPO}/contents/src/content/blog/${slug}.md`,
+    `${GH_API}/repos/${env.GITHUB_REPO}/contents/${path}`,
     { headers: ghHeaders(env) }
   );
   if (!res.ok) throw new Error(`github get failed: ${res.status}`);
@@ -89,18 +89,22 @@ export async function getPost(env: Env, slug: string): Promise<{ sha: string; co
   return { sha: data.sha, content: new TextDecoder().decode(bytes) };
 }
 
+export async function getPost(env: Env, slug: string): Promise<{ sha: string; content: string }> {
+  return getFile(env, `src/content/blog/${slug}.md`);
+}
+
 function toBase64(s: string): string {
   return btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 }
 
-export async function putPost(env: Env, slug: string, content: string, sha?: string): Promise<void> {
+export async function putFile(env: Env, path: string, content: string, message: string, sha?: string): Promise<void> {
   const res = await fetch(
-    `${GH_API}/repos/${env.GITHUB_REPO}/contents/src/content/blog/${slug}.md`,
+    `${GH_API}/repos/${env.GITHUB_REPO}/contents/${path}`,
     {
       method: 'PUT',
       headers: ghHeaders(env),
       body: JSON.stringify({
-        message: sha ? `post: update ${slug}` : `post: new ${slug}`,
+        message,
         content: toBase64(content),
         branch: 'master',
         ...(sha ? { sha } : {}),
@@ -108,6 +112,10 @@ export async function putPost(env: Env, slug: string, content: string, sha?: str
     }
   );
   if (!res.ok) throw new Error(`github put failed: ${res.status} ${await res.text()}`);
+}
+
+export async function putPost(env: Env, slug: string, content: string, sha?: string): Promise<void> {
+  await putFile(env, `src/content/blog/${slug}.md`, content, sha ? `post: update ${slug}` : `post: new ${slug}`, sha);
 }
 
 export async function deletePost(env: Env, slug: string, sha: string): Promise<void> {

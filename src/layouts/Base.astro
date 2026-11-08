@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { title, description = '记录与思考的角落' } = Astro.props;
-const fullTitle = title === '首页' ? 'hallowmuyi' : `${title} · hallowmuyi`;
+const fullTitle = title === '首页' ? 'MUYI BLOG' : `${title} · MUYI BLOG`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -19,13 +19,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta property="og:site_name" content="hallowmuyi" />
+    <meta property="og:site_name" content="MUYI BLOG" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary" />
-    <link rel="alternate" type="application/rss+xml" title="hallowmuyi" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="MUYI BLOG" href="/rss.xml" />
     <!-- Cloudflare Web Analytics -->
     <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "8e99161d9ccb4519881bbf20c6a2acd0"}'></script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -48,12 +48,21 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <body class="bg-bg text-fg dark:bg-bg-dark dark:text-fg-dark font-serif min-h-screen flex flex-col">
     <header class="border-b border-border dark:border-border-dark">
       <nav class="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="/" class="font-semibold text-lg tracking-wide">hallowmuyi</a>
+        <a href="/" class="font-bold text-lg tracking-widest">MUYI BLOG</a>
         <div class="flex items-center gap-4 sm:gap-5 text-sm">
           <a href="/blog" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">文章</a>
           <a href="/archive" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">归档</a>
           <a href="/tags" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">标签</a>
           <a href="/about" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">关于</a>
+          <button
+            id="search-toggle"
+            aria-label="搜索"
+            class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+          </button>
           <button
             id="theme-toggle"
             aria-label="切换主题"
@@ -68,24 +77,110 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           </button>
         </div>
       </nav>
+      <div id="search-panel" class="hidden border-t border-border dark:border-border-dark">
+        <div class="max-w-2xl mx-auto px-6 py-3">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="搜索文章…"
+            autocomplete="off"
+            class="w-full bg-transparent outline-none text-base py-1 placeholder:text-muted dark:placeholder:text-muted-dark"
+          />
+          <ul id="search-results" class="mt-1 divide-y divide-border dark:divide-border-dark"></ul>
+        </div>
+      </div>
     </header>
 
     <main class="flex-1 w-full max-w-2xl mx-auto px-6 py-12">
       <slot />
     </main>
 
-    <footer class="border-t border-border dark:border-border-dark">
-      <div class="max-w-2xl mx-auto px-6 py-6 text-sm text-muted dark:text-muted-dark flex items-center justify-between">
-        <span>© 2026 hallowmuyi</span>
-        <a href="https://hallowmuyi.space" class="hover:text-fg dark:hover:text-fg-dark transition-colors">hallowmuyi.space</a>
-      </div>
-    </footer>
-
     <script is:inline>
       document.getElementById('theme-toggle').addEventListener('click', function () {
         var isDark = document.documentElement.classList.toggle('dark');
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
       });
+
+      // 站内模糊搜索
+      (function () {
+        var panel = document.getElementById('search-panel');
+        var input = document.getElementById('search-input');
+        var results = document.getElementById('search-results');
+        var index = null;
+
+        function toggle() {
+          var opening = panel.classList.contains('hidden');
+          panel.classList.toggle('hidden');
+          if (opening) {
+            input.focus();
+            if (!index) {
+              fetch('/search-index.json')
+                .then(function (r) { return r.json(); })
+                .then(function (d) { index = d; render(); });
+            }
+          }
+        }
+
+        // 子序列模糊匹配，返回匹配度（越大越好），不匹配返回 -1
+        function fuzzy(query, text) {
+          var qi = 0, score = 0, lastHit = -2;
+          for (var ti = 0; ti < text.length && qi < query.length; ti++) {
+            if (text[ti] === query[qi]) {
+              score += ti === lastHit + 1 ? 3 : 1; // 连续命中加权
+              lastHit = ti;
+              qi++;
+            }
+          }
+          return qi === query.length ? score : -1;
+        }
+
+        function render() {
+          var q = input.value.trim().toLowerCase();
+          results.innerHTML = '';
+          if (!q || !index) return;
+          var hits = [];
+          for (var i = 0; i < index.length; i++) {
+            var p = index[i];
+            var best = Math.max(
+              fuzzy(q, p.title.toLowerCase()) + 100,
+              fuzzy(q, (p.tags || []).join(' ').toLowerCase()) + 50,
+              fuzzy(q, (p.description || '').toLowerCase()) + 20,
+              fuzzy(q, (p.body || '').toLowerCase())
+            );
+            if (best >= 0) hits.push({ p: p, s: best });
+          }
+          hits.sort(function (a, b) { return b.s - a.s; });
+          hits.slice(0, 8).forEach(function (h) {
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = '/blog/' + h.p.slug;
+            a.className = 'flex items-baseline justify-between gap-4 py-2.5 hover:text-accent dark:hover:text-accent-dark transition-colors';
+            var t = document.createElement('span');
+            t.textContent = h.p.title;
+            var d = document.createElement('time');
+            d.className = 'text-xs text-muted dark:text-muted-dark font-mono shrink-0';
+            d.textContent = h.p.date;
+            a.appendChild(t);
+            a.appendChild(d);
+            li.appendChild(a);
+            results.appendChild(li);
+          });
+          if (!hits.length) {
+            var li = document.createElement('li');
+            li.className = 'py-2.5 text-muted dark:text-muted-dark text-sm';
+            li.textContent = '没有匹配的文章';
+            results.appendChild(li);
+          }
+        }
+
+        document.getElementById('search-toggle').addEventListener('click', toggle);
+        input.addEventListener('input', render);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+          }
+        });
+      })();
     </script>
   </body>
 </html>
