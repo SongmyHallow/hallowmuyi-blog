@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).filter((p) => !p.data.draft);
+
+const tagCount = new Map<string, number>();
+for (const p of posts) {
+  for (const t of p.data.tags) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+}
+const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]);
+---
+
+<Base title="标签">
+  <h1 class="text-2xl font-bold mb-10">标签</h1>
+  {tags.length === 0 ? (
+    <p class="text-muted dark:text-muted-dark">还没有标签。</p>
+  ) : (
+    <ul class="flex flex-wrap gap-x-6 gap-y-3">
+      {tags.map(([tag, count]) => (
+        <li>
+          <a href={`/tags/${tag}`} class="group">
+            <span class="text-accent dark:text-accent-dark group-hover:underline underline-offset-4">#{tag}</span>
+            <span class="text-sm text-muted dark:text-muted-dark font-mono ml-1">({count})</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

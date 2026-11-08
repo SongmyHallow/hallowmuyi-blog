@@ -1,34 +1,40 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection, render } from 'astro:content';
+import { postMeta, formatDate } from '../../utils/postMeta';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
-  return posts
+  const posts = (await getCollection('blog'))
     .filter((p) => !p.data.draft)
-    .map((post) => ({
-      params: { slug: post.id },
-      props: { post },
-    }));
+    .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: {
+      post,
+      prev: posts[i - 1] ?? null, // 更早的一篇
+      next: posts[i + 1] ?? null, // 更新的一篇
+    },
+  }));
 }
 
-const { post } = Astro.props;
+const { post, prev, next } = Astro.props;
 const { Content } = await render(post);
-
-function formatDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+const { words, minutes } = postMeta(post.body ?? '');
 ---
 
 <Base title={post.data.title} description={post.data.description}>
   <article>
     <header class="mb-10">
-      <h1 class="font-serif text-3xl font-semibold leading-snug mb-3">{post.data.title}</h1>
-      <div class="flex items-center gap-3 text-sm text-muted dark:text-muted-dark">
+      <h1 class="text-3xl font-bold leading-snug mb-4">{post.data.title}</h1>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted dark:text-muted-dark">
         <time class="font-mono">{formatDate(post.data.date)}</time>
+        <span class="font-mono">·</span>
+        <span class="font-mono">{words} 字 · 约 {minutes} 分钟</span>
         {post.data.tags.length > 0 && (
           <span class="flex gap-2">
-            {post.data.tags.map((t) => <span>#{t}</span>)}
+            {post.data.tags.map((t) => (
+              <a href={`/tags/${t}`} class="text-accent dark:text-accent-dark hover:underline underline-offset-4">#{t}</a>
+            ))}
           </span>
         )}
       </div>
@@ -36,5 +42,19 @@ function formatDate(d: Date) {
     <div class="prose-blog">
       <Content />
     </div>
+    <nav class="mt-16 pt-8 border-t border-border dark:border-border-dark flex justify-between gap-6 text-sm">
+      {prev ? (
+        <a href={`/blog/${prev.id}`} class="group max-w-[45%]">
+          <span class="text-muted dark:text-muted-dark">← 上一篇</span>
+          <span class="block mt-1 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors leading-snug">{prev.data.title}</span>
+        </a>
+      ) : <span />}
+      {next ? (
+        <a href={`/blog/${next.id}`} class="group max-w-[45%] text-right ml-auto">
+          <span class="text-muted dark:text-muted-dark">下一篇 →</span>
+          <span class="block mt-1 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors leading-snug">{next.data.title}</span>
+        </a>
+      ) : <span />}
+    </nav>
   </article>
 </Base>

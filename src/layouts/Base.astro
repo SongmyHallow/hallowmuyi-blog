@@ -34,12 +34,14 @@ const fullTitle = title === '首页' ? 'hallowmuyi' : `${title} · hallowmuyi`;
       })();
     </script>
   </head>
-  <body class="bg-bg text-fg dark:bg-bg-dark dark:text-fg-dark font-sans min-h-screen flex flex-col">
+  <body class="bg-bg text-fg dark:bg-bg-dark dark:text-fg-dark font-serif min-h-screen flex flex-col">
     <header class="border-b border-border dark:border-border-dark">
       <nav class="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="/" class="font-serif font-semibold text-lg tracking-wide">hallowmuyi</a>
-        <div class="flex items-center gap-5 text-sm">
+        <a href="/" class="font-semibold text-lg tracking-wide">hallowmuyi</a>
+        <div class="flex items-center gap-4 sm:gap-5 text-sm">
           <a href="/blog" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">文章</a>
+          <a href="/archive" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">归档</a>
+          <a href="/tags" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">标签</a>
           <a href="/about" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">关于</a>
           <button
             id="theme-toggle"
