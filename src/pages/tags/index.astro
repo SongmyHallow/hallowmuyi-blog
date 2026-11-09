@@ -12,16 +12,17 @@ const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]);
 ---
 
 <Base title="标签">
-  <h1 class="text-2xl font-bold mb-10">标签</h1>
+  <h1 class="font-pixel text-2xl mb-2">标签</h1>
+  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-10">TAGS {tags.length}</p>
   {tags.length === 0 ? (
     <p class="text-muted dark:text-muted-dark">还没有标签。</p>
   ) : (
-    <ul class="flex flex-wrap gap-x-6 gap-y-3">
+    <ul class="flex flex-wrap gap-3">
       {tags.map(([tag, count]) => (
         <li>
-          <a href={`/tags/${tag}`} class="group">
-            <span class="text-accent dark:text-accent-dark group-hover:underline underline-offset-4">#{tag}</span>
-            <span class="text-sm text-muted dark:text-muted-dark font-mono ml-1">({count})</span>
+          <a href={`/tags/${tag}`} class="px-tag inline-flex items-center gap-2 !py-1">
+            <span>#{tag}</span>
+            <span class="opacity-60">{count}</span>
           </a>
         </li>
       ))}

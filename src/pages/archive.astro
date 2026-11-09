@@ -17,17 +17,20 @@ const years = [...byYear.keys()].sort((a, b) => b - a);
 ---
 
 <Base title="归档">
-  <h1 class="text-2xl font-bold mb-10">归档</h1>
+  <h1 class="font-pixel text-2xl mb-2">归档</h1>
+  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-10">ARCHIVE</p>
   {years.map((year) => (
     <section class="mb-10">
-      <h2 class="text-sm font-mono text-muted dark:text-muted-dark tracking-widest mb-4">{year}</h2>
-      <ul class="space-y-2.5">
+      <h2 class="font-pixel text-2xl mb-4 pb-2 border-b-2 border-dashed border-shadow dark:border-border-dark">
+        <span class="text-accent dark:text-accent-dark">▸</span> {year}
+      </h2>
+      <ul class="space-y-2">
         {byYear.get(year)!.map((post) => (
-          <li class="group flex items-baseline gap-4">
-            <time class="text-sm text-muted dark:text-muted-dark font-mono shrink-0 w-24">
-              {formatDate(post.data.date)}
+          <li class="flex items-baseline gap-3">
+            <time class="font-pixel text-xs text-muted dark:text-muted-dark shrink-0 w-24">
+              [{formatDate(post.data.date)}]
             </time>
-            <a href={`/blog/${post.id}`} class="group-hover:text-accent dark:group-hover:text-accent-dark transition-colors leading-snug">
+            <a href={`/blog/${post.id}`} class="leading-snug hover:bg-accent hover:text-panel dark:hover:bg-accent-dark dark:hover:text-bg-dark px-1">
               {post.data.title}
             </a>
           </li>

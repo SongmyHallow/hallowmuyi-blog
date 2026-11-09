@@ -7,7 +7,8 @@ const { Content } = await render(about!);
 ---
 
 <Base title={about!.data.title}>
-  <h1 class="text-2xl font-bold mb-8">{about!.data.title}</h1>
+  <h1 class="font-pixel text-2xl mb-2">{about!.data.title}</h1>
+  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-8">ABOUT</p>
   <div class="prose-blog">
     <Content />
   </div>

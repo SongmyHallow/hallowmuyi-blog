@@ -29,12 +29,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <!-- Cloudflare Web Analytics -->
     <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "8e99161d9ccb4519881bbf20c6a2acd0"}'></script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" href="/fonts/fusion-pixel-12px.woff2" as="font" type="font/woff2" crossorigin />
     <script is:inline>
       (function () {
         var stored = localStorage.getItem('theme');
@@ -45,57 +40,74 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       })();
     </script>
   </head>
-  <body class="bg-bg text-fg dark:bg-bg-dark dark:text-fg-dark font-serif min-h-screen flex flex-col">
-    <header class="border-b border-border dark:border-border-dark">
-      <nav class="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="/" class="font-bold text-lg tracking-widest">MUYI BLOG</a>
-        <div class="flex items-center gap-4 sm:gap-5 text-sm">
-          <a href="/blog" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">文章</a>
-          <a href="/archive" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">归档</a>
-          <a href="/tags" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">标签</a>
-          <a href="/about" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">关于</a>
-          <a id="admin-link" href="/admin"
-            class="hidden text-accent dark:text-accent-dark font-medium hover:underline underline-offset-4">后台</a>
-          <a id="edit-link" href="/admin"
-            class="hidden text-accent dark:text-accent-dark font-medium hover:underline underline-offset-4">编辑本文</a>
+  <body class="min-h-screen flex flex-col">
+    <header class="border-b-2 border-border dark:border-border-dark">
+      <nav class="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <a href="/" class="font-pixel text-2xl leading-none tracking-widest shrink-0 flex items-center">MUYI<span class="inline-block w-2 h-2 ml-1.5 bg-accent dark:bg-accent-dark"></span></a>
+        <div class="flex items-center gap-1 sm:gap-2">
+          <a href="/blog" class="px-nav-link">文章</a>
+          <a href="/archive" class="px-nav-link">归档</a>
+          <a href="/tags" class="px-nav-link">标签</a>
+          <a href="/about" class="px-nav-link">关于</a>
+          <a id="admin-link" href="/admin" class="hidden px-nav-link !text-accent dark:!text-accent-dark">后台</a>
+          <a id="edit-link" href="/admin" class="hidden px-nav-link !text-accent dark:!text-accent-dark">编辑</a>
           <button
             id="search-toggle"
             aria-label="搜索"
-            class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors cursor-pointer"
+            class="text-muted dark:text-muted-dark hover:text-accent dark:hover:text-accent-dark cursor-pointer ml-1"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" shape-rendering="crispEdges">
+              <rect x="2" y="2" width="14" height="2" />
+              <rect x="2" y="2" width="2" height="14" />
+              <rect x="14" y="2" width="2" height="14" />
+              <rect x="2" y="14" width="14" height="2" />
+              <rect x="16" y="16" width="2" height="2" />
+              <rect x="18" y="18" width="2" height="2" />
+              <rect x="20" y="20" width="2" height="2" />
             </svg>
           </button>
           <button
             id="theme-toggle"
             aria-label="切换主题"
-            class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors cursor-pointer"
+            class="text-muted dark:text-muted-dark hover:text-accent dark:hover:text-accent-dark cursor-pointer"
           >
-            <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+            <svg id="icon-sun" class="w-5 h-5 hidden dark:block" viewBox="0 0 24 24" fill="currentColor" shape-rendering="crispEdges">
+              <rect x="7" y="7" width="10" height="10" />
+              <rect x="11" y="2" width="2" height="4" />
+              <rect x="11" y="18" width="2" height="4" />
+              <rect x="2" y="11" width="4" height="2" />
+              <rect x="18" y="11" width="4" height="2" />
             </svg>
-            <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+            <svg id="icon-moon" class="w-5 h-5 block dark:hidden" viewBox="0 0 24 24" fill="currentColor" shape-rendering="crispEdges">
+              <rect x="14" y="2" width="6" height="2" />
+              <rect x="12" y="4" width="6" height="2" />
+              <rect x="10" y="6" width="6" height="2" />
+              <rect x="8" y="8" width="6" height="2" />
+              <rect x="6" y="10" width="6" height="2" />
+              <rect x="6" y="12" width="6" height="2" />
+              <rect x="6" y="14" width="6" height="2" />
+              <rect x="8" y="16" width="6" height="2" />
+              <rect x="10" y="18" width="6" height="2" />
+              <rect x="12" y="20" width="6" height="2" />
             </svg>
           </button>
         </div>
       </nav>
-      <div id="search-panel" class="hidden border-t border-border dark:border-border-dark">
+      <div id="search-panel" class="hidden border-t-2 border-border dark:border-border-dark">
         <div class="max-w-2xl mx-auto px-6 py-3">
           <input
             id="search-input"
             type="search"
             placeholder="搜索文章…"
             autocomplete="off"
-            class="w-full bg-transparent outline-none text-base py-1 placeholder:text-muted dark:placeholder:text-muted-dark"
+            class="w-full bg-panel dark:bg-panel-dark border-2 border-border dark:border-border-dark outline-none text-base px-3 py-1.5 placeholder:text-muted dark:placeholder:text-muted-dark focus:border-accent dark:focus:border-accent-dark"
           />
-          <ul id="search-results" class="mt-1 divide-y divide-border dark:divide-border-dark"></ul>
+          <ul id="search-results" class="mt-2 space-y-1"></ul>
         </div>
       </div>
     </header>
 
-    <main class="flex-1 w-full max-w-2xl mx-auto px-6 py-12">
+    <main class="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-12">
       <slot />
     </main>
 
@@ -158,11 +170,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
             var li = document.createElement('li');
             var a = document.createElement('a');
             a.href = '/blog/' + h.p.slug;
-            a.className = 'flex items-baseline justify-between gap-4 py-2.5 hover:text-accent dark:hover:text-accent-dark transition-colors';
+            a.className = 'flex items-baseline justify-between gap-4 px-2 py-2 hover:bg-accent hover:text-panel dark:hover:bg-accent-dark dark:hover:text-bg-dark';
             var t = document.createElement('span');
             t.textContent = h.p.title;
             var d = document.createElement('time');
-            d.className = 'text-xs text-muted dark:text-muted-dark font-mono shrink-0';
+            d.className = 'font-pixel text-xs text-muted dark:text-muted-dark shrink-0';
             d.textContent = h.p.date;
             a.appendChild(t);
             a.appendChild(d);
@@ -171,7 +183,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           });
           if (!hits.length) {
             var li = document.createElement('li');
-            li.className = 'py-2.5 text-muted dark:text-muted-dark text-sm';
+            li.className = 'py-2 text-muted dark:text-muted-dark text-sm';
             li.textContent = '没有匹配的文章';
             results.appendChild(li);
           }

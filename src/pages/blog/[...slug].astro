@@ -26,34 +26,30 @@ const { words, minutes } = postMeta(post.body ?? '');
 <Base title={post.data.title} description={post.data.description}>
   <article>
     <header class="mb-10">
-      <h1 class="text-3xl font-bold leading-snug mb-4">{post.data.title}</h1>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted dark:text-muted-dark">
-        <time class="font-mono">{formatDate(post.data.date)}</time>
-        <span class="font-mono">·</span>
-        <span class="font-mono">{words} 字 · 约 {minutes} 分钟</span>
-        {post.data.tags.length > 0 && (
-          <span class="flex gap-2">
-            {post.data.tags.map((t) => (
-              <a href={`/tags/${t}`} class="text-accent dark:text-accent-dark hover:underline underline-offset-4">#{t}</a>
-            ))}
-          </span>
-        )}
+      <h1 class="font-pixel text-4xl leading-tight mb-4">{post.data.title}</h1>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 font-pixel text-xs text-muted dark:text-muted-dark">
+        <time>[{formatDate(post.data.date)}]</time>
+        <span class="opacity-50">·</span>
+        <span>{words} 字 · 约 {minutes} 分钟</span>
+        {post.data.tags.map((t) => (
+          <a href={`/tags/${t}`} class="px-tag">#{t}</a>
+        ))}
       </div>
     </header>
     <div class="prose-blog">
       <Content />
     </div>
-    <nav class="mt-16 pt-8 border-t border-border dark:border-border-dark flex justify-between gap-6 text-sm">
+    <nav class="mt-16 grid sm:grid-cols-2 gap-4">
       {prev ? (
-        <a href={`/blog/${prev.id}`} class="group max-w-[45%]">
-          <span class="text-muted dark:text-muted-dark">← 上一篇</span>
-          <span class="block mt-1 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors leading-snug">{prev.data.title}</span>
+        <a href={`/blog/${prev.id}`} class="px-card p-4 hover:border-accent dark:hover:border-accent-dark">
+          <span class="font-pixel text-xs text-muted dark:text-muted-dark">← 上一篇</span>
+          <span class="block mt-2 leading-snug">{prev.data.title}</span>
         </a>
       ) : <span />}
       {next ? (
-        <a href={`/blog/${next.id}`} class="group max-w-[45%] text-right ml-auto">
-          <span class="text-muted dark:text-muted-dark">下一篇 →</span>
-          <span class="block mt-1 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors leading-snug">{next.data.title}</span>
+        <a href={`/blog/${next.id}`} class="px-card p-4 sm:text-right hover:border-accent dark:hover:border-accent-dark">
+          <span class="font-pixel text-xs text-muted dark:text-muted-dark">下一篇 →</span>
+          <span class="block mt-2 leading-snug">{next.data.title}</span>
         </a>
       ) : <span />}
     </nav>
