@@ -246,6 +246,9 @@ import Base from '../../layouts/Base.astro';
         await api('/api/posts');
         show('admin');
         await loadList();
+        // 支持 /admin?edit=<slug> 直接进入某篇文章的编辑（来自文章页「编辑本文」）
+        const editSlug = new URLSearchParams(location.search).get('edit');
+        if (editSlug) openEditor(editSlug);
       } catch { /* 未登录，show('login') 已由 api() 处理 */ }
     })();
   </script>

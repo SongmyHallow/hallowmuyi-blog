@@ -54,6 +54,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           <a href="/archive" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">归档</a>
           <a href="/tags" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">标签</a>
           <a href="/about" class="text-muted dark:text-muted-dark hover:text-fg dark:hover:text-fg-dark transition-colors">关于</a>
+          <a id="admin-link" href="/admin"
+            class="hidden text-accent dark:text-accent-dark font-medium hover:underline underline-offset-4">后台</a>
+          <a id="edit-link" href="/admin"
+            class="hidden text-accent dark:text-accent-dark font-medium hover:underline underline-offset-4">编辑本文</a>
           <button
             id="search-toggle"
             aria-label="搜索"
@@ -181,6 +185,23 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           }
         });
       })();
+
+      // 已登录管理员：显示「后台」入口，文章页额外显示「编辑本文」
+      if (!location.pathname.startsWith('/admin')) {
+        fetch('/api/session')
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (!d.authed) return;
+            document.getElementById('admin-link').classList.remove('hidden');
+            var m = location.pathname.match(/^\/blog\/([^/]+)\/?$/);
+            if (m) {
+              var a = document.getElementById('edit-link');
+              a.href = '/admin?edit=' + m[1];
+              a.classList.remove('hidden');
+            }
+          })
+          .catch(function () {});
+      }
     </script>
   </body>
 </html>
