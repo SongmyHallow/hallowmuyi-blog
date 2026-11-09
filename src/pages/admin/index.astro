@@ -114,6 +114,10 @@ import Base from '../../layouts/Base.astro';
 
     function today() { return new Date().toISOString().slice(0, 10); }
 
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     async function loadList() {
       const { posts } = await api('/api/posts');
       const ul = $('post-list');
@@ -122,7 +126,10 @@ import Base from '../../layouts/Base.astro';
         const li = document.createElement('li');
         li.className = 'flex items-center justify-between gap-4';
         li.innerHTML = `
-          <a href="/blog/${p.slug}" target="_blank" class="font-mono text-sm hover:text-accent dark:hover:text-accent-dark transition-colors truncate">${p.slug}</a>
+          <a href="/blog/${p.slug}" target="_blank" class="min-w-0 hover:text-accent dark:hover:text-accent-dark transition-colors">
+            <span class="block truncate">${esc(p.title || p.slug)}</span>
+            <span class="block font-mono text-xs text-muted dark:text-muted-dark truncate">${esc(p.slug)}</span>
+          </a>
           <span class="flex gap-3 text-sm shrink-0">
             <button data-edit="${p.slug}" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑</button>
             <button data-del="${p.slug}" class="text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer">删除</button>
@@ -155,6 +162,7 @@ import Base from '../../layouts/Base.astro';
         api(`/api/posts/${slug}`).then(({ post }) => {
           $('f-slug').value = slug;
           $('f-title').value = post.title;
+          $('editor-title').textContent = `编辑：${post.title}`;
           $('f-date').value = post.date;
           $('f-desc').value = post.description || '';
           $('f-tags').value = post.tags.join(', ');

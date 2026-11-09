@@ -62,6 +62,16 @@ export interface PostFile {
   name: string; // 文件名，如 hello-world.md
   slug: string;
   sha: string;
+  title: string; // frontmatter 里的标题，解析失败时回落为 slug
+}
+
+// 从 Markdown 的 frontmatter 中取出 title
+function parseTitle(markdown: string): string | null {
+  const fm = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) return null;
+  const line = fm[1].match(/^title:\s*(.+)$/m);
+  if (!line) return null;
+  return line[1].trim().replace(/^['"]|['"]$/g, '');
 }
 
 export async function listPosts(env: Env): Promise<PostFile[]> {
@@ -71,9 +81,24 @@ export async function listPosts(env: Env): Promise<PostFile[]> {
   );
   if (!res.ok) throw new Error(`github list failed: ${res.status}`);
   const files: { name: string; sha: string }[] = await res.json();
-  return files
+  const posts: PostFile[] = files
     .filter((f) => f.name.endsWith('.md'))
-    .map((f) => ({ name: f.name, slug: f.name.replace(/\.md$/, ''), sha: f.sha }));
+    .map((f) => {
+      const slug = f.name.replace(/\.md$/, '');
+      return { name: f.name, slug, sha: f.sha, title: slug };
+    });
+  // 并行读取每篇的 frontmatter 取标题；单篇失败不影响列表
+  await Promise.all(
+    posts.map(async (p) => {
+      try {
+        const { content } = await getPost(env, p.slug);
+        p.title = parseTitle(content) ?? p.slug;
+      } catch {
+        /* 保留 slug 兜底 */
+      }
+    })
+  );
+  return posts;
 }
 
 export async function getFile(env: Env, path: string): Promise<{ sha: string; content: string }> {
