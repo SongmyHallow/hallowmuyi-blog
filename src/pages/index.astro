@@ -1,41 +1,99 @@
 ---
 import Base from '../layouts/Base.astro';
-import PostCard from '../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 
-const posts = (await getCollection('blog'))
-  .filter((p) => !p.data.draft)
+const all = (await getCollection('blog')).filter((p) => !p.data.draft);
+const posts = all
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 8);
+  .slice(0, 5);
+
+// EXP 按「今年已发文章数 ÷ 年度目标 12 篇」计算
+const year = new Date().getFullYear();
+const yearCount = all.filter((p) => p.data.date.getFullYear() === year).length;
+const expBlocks = Math.max(1, Math.min(8, Math.round((yearCount / 12) * 8)));
+const expPct = Math.min(100, Math.round((yearCount / 12) * 100));
+
+const menu = [
+  { name: '开始冒险', note: '文章列表', href: '/blog' },
+  { name: '读取存档', note: '归档', href: '/archive' },
+  { name: '物品栏', note: '标签', href: '/tags' },
+  { name: '制作名单', note: '关于', href: '/about' },
+];
+
+function md(date: Date) {
+  return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
 ---
 
 <Base title="首页">
-  <section class="px-card p-5 sm:p-6 mb-14">
-    <div class="flex items-center justify-between font-pixel text-xs text-muted dark:text-muted-dark mb-4">
-      <span>PLAYER 1</span>
-      <span>LV.01</span>
-    </div>
-    <h1 class="font-pixel text-4xl leading-none tracking-widest mb-4 flex items-center">
-      MUYI<span class="inline-block w-3 h-3 ml-2 bg-accent dark:bg-accent-dark"></span>
+  {/* 标题画面 */}
+  <section class="mb-10 text-center">
+    <h1 class="font-pixel text-4xl leading-none tracking-widest inline-flex items-center justify-center">
+      MUYI&nbsp;BLOG<span class="inline-block w-3 h-3 ml-3 bg-accent dark:bg-accent-dark"></span>
     </h1>
-    <p class="text-muted dark:text-muted-dark leading-relaxed">
-      写下来，是为了看清自己在想什么。
+    <p class="font-pixel text-xs text-muted dark:text-muted-dark mt-4 tracking-[0.2em]">
+      PRESS START <span class="px-blink text-accent dark:text-accent-dark">▮</span>
     </p>
-    <div class="mt-5 pt-4 border-t-2 border-dashed border-shadow dark:border-border-dark flex items-center gap-3 font-pixel text-xs text-muted dark:text-muted-dark">
-      <span>STATUS</span>
-      <span class="tracking-[0.25em] text-accent dark:text-accent-dark">▮▮▮▮</span>
-      <span class="tracking-[0.25em] opacity-25">▮</span>
-      <span class="ml-auto">ONLINE</span>
-    </div>
   </section>
 
-  <section>
-    <h2 class="font-pixel text-xs tracking-[0.2em] text-muted dark:text-muted-dark mb-6">
-      <span class="text-accent dark:text-accent-dark">▸</span> 最新文章
-    </h2>
-    <div class="space-y-6">
-      {posts.map((post) => <PostCard post={post} />)}
-    </div>
-    <a href="/blog" class="px-btn mt-10">全部文章 →</a>
-  </section>
+  <div class="space-y-6">
+    {/* 角色状态 */}
+    <section class="px-card p-5 sm:p-6">
+      <div class="flex items-center justify-between font-pixel text-xs text-muted dark:text-muted-dark mb-4">
+        <span>PLAYER STATUS</span>
+        <span>LV.01</span>
+      </div>
+      <p class="font-pixel text-2xl mb-4">MUYI</p>
+      <div class="space-y-2 font-pixel text-xs">
+        <div class="flex items-center gap-3">
+          <span class="text-muted dark:text-muted-dark w-10">HP</span>
+          <span class="tracking-[0.2em] text-accent dark:text-accent-dark">▮▮▮▮▮▮▮</span>
+          <span class="tracking-[0.2em] opacity-25">▮</span>
+          <span class="text-muted dark:text-muted-dark ml-auto">7/8</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-muted dark:text-muted-dark w-10">EXP</span>
+          <span class="tracking-[0.2em] text-accent dark:text-accent-dark">{'▮'.repeat(expBlocks)}</span>
+          <span class="tracking-[0.2em] opacity-25">{'▮'.repeat(8 - expBlocks)}</span>
+          <span class="text-muted dark:text-muted-dark ml-auto">{expPct}%</span>
+        </div>
+        <div class="flex items-center gap-3 pt-1">
+          <span class="text-muted dark:text-muted-dark w-10">CLASS</span>
+          <span>写作者</span>
+          <span class="text-muted dark:text-muted-dark ml-auto">{year} 已写 {yearCount} 篇</span>
+        </div>
+      </div>
+    </section>
+
+    {/* 主菜单 */}
+    <section class="px-card p-5 sm:p-6">
+      <h2 class="font-pixel text-xs text-muted dark:text-muted-dark mb-3">MAIN MENU</h2>
+      <ul>
+        {menu.map((item) => (
+          <li>
+            <a href={item.href} class="menu-row">
+              <span class="menu-name font-pixel text-2xl">{item.name}</span>
+              <span class="menu-note hidden sm:inline font-pixel text-xs">{item.note}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    {/* 任务日志 */}
+    <section class="px-card p-5 sm:p-6">
+      <h2 class="font-pixel text-xs text-muted dark:text-muted-dark mb-3">QUEST LOG</h2>
+      <ul>
+        {posts.map((post) => (
+          <li>
+            <a href={`/blog/${post.id}`} class="menu-row">
+              <span class="menu-name">{post.data.title}</span>
+              <span class="menu-note font-pixel text-xs shrink-0">[{md(post.data.date)}]</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <a href="/blog" class="px-btn mt-5">VIEW ALL QUESTS →</a>
+    </section>
+  </div>
 </Base>

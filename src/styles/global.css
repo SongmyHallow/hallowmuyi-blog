@@ -182,6 +182,73 @@ a.px-tag:hover {
   color: var(--color-bg-dark);
 }
 
+/* 闪烁光标（PRESS START），尊重系统减弱动效 */
+@keyframes px-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.px-blink {
+  animation: px-blink 1s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .px-blink {
+    animation: none;
+  }
+}
+
+/* 游戏菜单行：hover/focus 出现 ▸ 并整行反色 */
+.menu-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 6px 10px;
+  color: var(--color-fg);
+}
+.menu-row .menu-name {
+  position: relative;
+  padding-left: 22px;
+}
+.menu-row .menu-name::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  opacity: 0;
+  color: inherit;
+}
+.menu-row:hover,
+.menu-row:focus-visible {
+  background: var(--color-accent);
+  color: var(--color-panel);
+  outline: none;
+}
+.menu-row:hover .menu-name::before,
+.menu-row:focus-visible .menu-name::before {
+  opacity: 1;
+}
+.menu-row .menu-note {
+  color: var(--color-muted);
+}
+.menu-row:hover .menu-note,
+.menu-row:focus-visible .menu-note {
+  color: var(--color-panel);
+}
+.dark .menu-row {
+  color: var(--color-fg-dark);
+}
+.dark .menu-row .menu-note {
+  color: var(--color-muted-dark);
+}
+.dark .menu-row:hover,
+.dark .menu-row:focus-visible {
+  background: var(--color-accent-dark);
+  color: var(--color-bg-dark);
+}
+.dark .menu-row:hover .menu-note,
+.dark .menu-row:focus-visible .menu-note {
+  color: var(--color-bg-dark);
+}
+
 /* ---------- 文章正文排版 ---------- */
 
 .prose-blog {
