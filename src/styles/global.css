@@ -52,7 +52,7 @@ body {
   background-size: 8px 8px;
   color: var(--color-fg);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.9;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -252,7 +252,7 @@ a.px-tag:hover {
 /* ---------- 文章正文排版 ---------- */
 
 .prose-blog {
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .prose-blog h2 {
@@ -276,10 +276,14 @@ a.px-tag:hover {
   letter-spacing: 0.14em;
   margin-top: 2.25rem;
   margin-bottom: 0.75rem;
-  color: var(--color-muted);
+  display: inline-block;
+  background: var(--color-tint);
+  padding: 3px 8px;
+  border: 2px solid var(--color-shadow);
 }
 .dark .prose-blog h3 {
-  color: var(--color-muted-dark);
+  background: var(--color-tint-dark);
+  border-color: var(--color-border-dark);
 }
 
 .prose-blog h3::before {

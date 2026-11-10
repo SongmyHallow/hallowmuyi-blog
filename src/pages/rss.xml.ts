@@ -1,6 +1,10 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
+import { marked } from 'marked';
+
+// marked 安全配置：去掉可能被滥用的原生 HTML 渲染
+marked.setOptions({ headerIds: false, mangle: false, breaks: true });
 
 export async function GET(context: APIContext) {
   const posts = (await getCollection('blog'))
@@ -15,6 +19,8 @@ export async function GET(context: APIContext) {
       description: p.data.description,
       pubDate: p.data.date,
       link: `/blog/${p.id}/`,
+      categories: p.data.tags,
+      content: marked.parse(p.body),
     })),
   });
 }
