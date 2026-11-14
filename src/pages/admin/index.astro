@@ -30,6 +30,7 @@ import Base from '../../layouts/Base.astro';
         <div class="flex gap-4 text-sm">
           <button id="btn-new" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 新文章</button>
           <button id="btn-about" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑关于页</button>
+          <button id="btn-games" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">游戏管理</button>
           <button id="btn-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
         </div>
       </div>
@@ -86,18 +87,152 @@ import Base from '../../layouts/Base.astro';
       </form>
     </div>
 
+    <!-- 游戏视图 -->
+    <div id="game-view" class="hidden">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold">游戏管理</h1>
+        <div class="flex gap-4 text-sm">
+          <button id="btn-new-game" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 新游戏</button>
+          <button id="btn-back-posts" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">← 返回文章</button>
+          <button id="btn-game-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
+        </div>
+      </div>
+      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后约 1 分钟自动部署上线。</p>
+
+      <ul id="game-list" class="space-y-3 mb-12"></ul>
+
+      <!-- 游戏编辑器 -->
+      <form id="game-editor" novalidate class="hidden space-y-4 border-t border-border dark:border-border-dark pt-8">
+        <h2 id="game-editor-title" class="text-lg font-semibold">新游戏</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">slug（URL 用，小写字母/数字/连字符）</span>
+            <input id="g-slug" placeholder="如 hollow-knight" pattern="[a-z0-9][a-z0-9-]*"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent font-mono text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">标题</span>
+            <input id="g-title"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">原名（可选）</span>
+            <input id="g-original-title"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">官网 URL（可选）</span>
+            <input id="g-official-url" type="url" placeholder="https://…"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 items-start">
+          <label class="block text-sm flex-1 w-full">
+            <span class="text-muted dark:text-muted-dark">封面图 URL</span>
+            <input id="g-cover" type="url" placeholder="https://…"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <img id="g-cover-preview" alt="封面预览" class="hidden w-16 h-[5.4rem] object-cover border-2 border-border dark:border-border-dark" />
+        </div>
+
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">简介（可选）</span>
+          <textarea id="g-summary" rows="3"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark"></textarea>
+        </label>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">开发商（可选）</span>
+            <input id="g-developer"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">发行商（可选）</span>
+            <input id="g-publisher"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">发售日期（可选）</span>
+            <input id="g-release-date" type="date"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">加入书架日期</span>
+            <input id="g-added-date" type="date"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">平台（逗号分隔，可选）</span>
+            <input id="g-platforms" placeholder="PC, PS5, Switch"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">类型（逗号分隔，可选）</span>
+            <input id="g-genres" placeholder="动作, 冒险"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+        </div>
+
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">关联博客（逗号分隔 slug，可选）</span>
+          <input id="g-related-posts" list="posts-datalist" placeholder="blog-slug, another-slug"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent font-mono text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+        </label>
+        <datalist id="posts-datalist"></datalist>
+
+        <label class="flex items-center gap-2 text-sm text-muted dark:text-muted-dark">
+          <input id="g-draft" type="checkbox" class="accent-[#7c5c3e]" /> 草稿（不公开显示）
+        </label>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-4 text-sm">
+            <span class="text-muted dark:text-muted-dark">评分（来源 + 评分）</span>
+            <button type="button" id="btn-add-score" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 添加评分</button>
+          </div>
+          <div id="g-scores" class="space-y-2"></div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-4 text-sm">
+            <span class="text-muted dark:text-muted-dark">相关链接</span>
+            <button type="button" id="btn-add-link" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 添加链接</button>
+          </div>
+          <div id="g-links" class="space-y-2"></div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-4 text-sm">
+            <span class="text-muted dark:text-muted-dark">更新记录</span>
+            <button type="button" id="btn-add-timeline" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 添加更新</button>
+          </div>
+          <div id="g-timeline" class="space-y-2"></div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button type="submit" id="g-save"
+            class="px-5 py-2 rounded bg-accent text-white dark:bg-accent-dark dark:text-bg-dark hover:opacity-90 transition-opacity cursor-pointer">保存</button>
+          <button type="button" id="g-cancel" class="text-sm text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">取消</button>
+          <span id="g-status" class="text-sm text-muted dark:text-muted-dark"></span>
+        </div>
+      </form>
+    </div>
+
     <p id="loading" class="text-muted dark:text-muted-dark">加载中…</p>
   </div>
 
   <script is:inline>
     const $ = (id) => document.getElementById(id);
-    const views = { login: $('login-view'), admin: $('admin-view'), loading: $('loading') };
+    const views = { login: $('login-view'), admin: $('admin-view'), game: $('game-view'), loading: $('loading') };
     let editingSlug = null; // null = 新建
     let aboutMode = false; // true = 编辑关于页
 
     function show(name) {
       views.login.classList.toggle('hidden', name !== 'login');
       views.admin.classList.toggle('hidden', name !== 'admin');
+      views.game.classList.toggle('hidden', name !== 'game');
       views.loading.classList.toggle('hidden', name !== 'loading');
     }
 
@@ -179,13 +314,251 @@ import Base from '../../layouts/Base.astro';
       await loadList();
     }
 
+    /* ---------- 游戏管理 ---------- */
+    const inputBase = 'px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark';
+    const delBtnCls = 'text-sm text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer shrink-0';
+    let gameSlug = null; // null = 新建
+
+    function dateInput(v) {
+      return v ? String(v).slice(0, 10) : '';
+    }
+
+    function splitList(v) {
+      return v.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+    }
+
+    async function loadGames() {
+      const { games } = await api('/api/games');
+      const ul = $('game-list');
+      ul.innerHTML = '';
+      if (!games.length) {
+        ul.innerHTML = '<li class="text-sm text-muted dark:text-muted-dark">还没有游戏，点击「+ 新游戏」添加。</li>';
+        return;
+      }
+      const sorted = games.slice().sort((a, b) => String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
+      for (const g of sorted) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-4';
+        li.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            ${g.cover ? `<img src="${esc(g.cover)}" alt="" class="w-10 h-[3.4rem] object-cover border-2 border-border dark:border-border-dark shrink-0" />` : ''}
+            <div class="min-w-0">
+              <span class="block truncate">${esc(g.title || g.slug)}</span>
+              <span class="block font-mono text-xs text-muted dark:text-muted-dark truncate">${esc(g.slug)}</span>
+              ${g.draft ? '<span class="text-xs text-muted dark:text-muted-dark">草稿</span>' : ''}
+            </div>
+          </div>
+          <span class="flex gap-3 text-sm shrink-0">
+            <button data-g-edit="${esc(g.slug)}" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑</button>
+            <button data-g-del="${esc(g.slug)}" class="text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer">删除</button>
+          </span>`;
+        const img = li.querySelector('img');
+        if (img) img.onerror = () => img.classList.add('hidden');
+        ul.appendChild(li);
+      }
+      ul.querySelectorAll('[data-g-edit]').forEach((b) => (b.onclick = () => openGameEditor(b.dataset.gEdit)));
+      ul.querySelectorAll('[data-g-del]').forEach((b) => (b.onclick = () => delGame(b.dataset.gDel)));
+    }
+
+    async function delGame(slug) {
+      if (!confirm(`确定删除游戏「${slug}」？此操作会把文件从仓库移除。`)) return;
+      await api(`/api/games/${slug}`, { method: 'DELETE' });
+      await loadGames();
+    }
+
+    function clearGameRows() {
+      ['g-scores', 'g-links', 'g-timeline'].forEach((id) => ($(id).innerHTML = ''));
+    }
+
+    function updateCoverPreview() {
+      const img = $('g-cover-preview');
+      const url = $('g-cover').value.trim();
+      img.classList.add('hidden');
+      img.onload = () => img.classList.remove('hidden');
+      img.onerror = () => img.classList.add('hidden');
+      img.removeAttribute('src');
+      if (url) img.src = url;
+    }
+
+    function bindRemove(row) {
+      row.querySelector('[data-remove]').onclick = () => row.remove();
+    }
+
+    function addScoreRow(data = {}) {
+      const row = document.createElement('div');
+      row.className = 'flex flex-wrap items-center gap-2';
+      row.innerHTML = `
+        <input data-field="source" placeholder="来源（如 IGN）" value="${esc(data.source || '')}" class="${inputBase} flex-1 min-w-[10rem]" />
+        <input data-field="score" placeholder="评分（如 9.5）" value="${esc(data.score || '')}" class="${inputBase} w-28" />
+        <button type="button" data-remove class="${delBtnCls}">删除</button>`;
+      bindRemove(row);
+      $('g-scores').appendChild(row);
+    }
+
+    function addLinkRow(data = {}) {
+      const row = document.createElement('div');
+      row.className = 'flex flex-wrap items-center gap-2';
+      row.innerHTML = `
+        <input data-field="title" placeholder="标题" value="${esc(data.title || '')}" class="${inputBase} flex-1 min-w-[9rem]" />
+        <input data-field="url" placeholder="https://…" value="${esc(data.url || '')}" class="${inputBase} flex-1 min-w-[9rem]" />
+        <select data-field="type" class="${inputBase} w-24">
+          <option value="article"${data.type === 'video' ? '' : ' selected'}>文章</option>
+          <option value="video"${data.type === 'video' ? ' selected' : ''}>视频</option>
+        </select>
+        <input data-field="note" placeholder="备注（可选）" value="${esc(data.note || '')}" class="${inputBase} flex-1 min-w-[7rem]" />
+        <input data-field="date" type="date" value="${esc(dateInput(data.date))}" class="${inputBase} w-40" />
+        <button type="button" data-remove class="${delBtnCls}">删除</button>`;
+      bindRemove(row);
+      $('g-links').appendChild(row);
+    }
+
+    function addTimelineRow(data = {}) {
+      const row = document.createElement('div');
+      row.className = 'flex flex-wrap items-center gap-2';
+      row.innerHTML = `
+        <input data-field="version" placeholder="版本（如 v1.4.3.2）" value="${esc(data.version || '')}" class="${inputBase} w-36" />
+        <input data-field="date" type="date" value="${esc(dateInput(data.date))}" class="${inputBase} w-40" />
+        <input data-field="summary" placeholder="更新内容" value="${esc(data.summary || '')}" class="${inputBase} flex-1 min-w-[10rem]" />
+        <input data-field="url" placeholder="链接（可选）" value="${esc(data.url || '')}" class="${inputBase} flex-1 min-w-[9rem]" />
+        <button type="button" data-remove class="${delBtnCls}">删除</button>`;
+      bindRemove(row);
+      $('g-timeline').appendChild(row);
+    }
+
+    function rowValue(row, field) {
+      const el = row.querySelector(`[data-field="${field}"]`);
+      return el ? el.value.trim() : '';
+    }
+
+    function readScoreRows() {
+      const out = [];
+      for (const row of $('g-scores').children) {
+        const source = rowValue(row, 'source');
+        const score = rowValue(row, 'score');
+        if (source && score) out.push({ source, score });
+      }
+      return out;
+    }
+
+    function readLinkRows() {
+      const out = [];
+      for (const row of $('g-links').children) {
+        const title = rowValue(row, 'title');
+        const url = rowValue(row, 'url');
+        const type = rowValue(row, 'type') === 'video' ? 'video' : 'article';
+        const note = rowValue(row, 'note');
+        const date = rowValue(row, 'date');
+        if (!title && !url && !note && !date) continue;
+        const link = { title, url, type };
+        if (note) link.note = note;
+        if (date) link.date = date;
+        out.push(link);
+      }
+      return out;
+    }
+
+    function readTimelineRows() {
+      const out = [];
+      for (const row of $('g-timeline').children) {
+        const version = rowValue(row, 'version');
+        const date = rowValue(row, 'date');
+        const summary = rowValue(row, 'summary');
+        const url = rowValue(row, 'url');
+        if (!version && !date && !summary && !url) continue;
+        const entry = { version, summary };
+        if (date) entry.date = date;
+        if (url) entry.url = url;
+        out.push(entry);
+      }
+      return out;
+    }
+
+    function resetGameForm() {
+      ['g-slug', 'g-title', 'g-original-title', 'g-cover', 'g-summary', 'g-developer', 'g-publisher',
+        'g-release-date', 'g-official-url', 'g-platforms', 'g-genres', 'g-related-posts'].forEach((id) => ($(id).value = ''));
+      $('g-added-date').value = today();
+      $('g-draft').checked = false;
+      updateCoverPreview();
+    }
+
+    function fillGameForm(slug, game) {
+      $('g-slug').value = slug;
+      $('g-title').value = game.title || '';
+      $('g-original-title').value = game.originalTitle || '';
+      $('g-cover').value = game.cover || '';
+      $('g-summary').value = game.summary || '';
+      $('g-developer').value = game.developer || '';
+      $('g-publisher').value = game.publisher || '';
+      $('g-release-date').value = dateInput(game.releaseDate);
+      $('g-added-date').value = dateInput(game.addedAt);
+      $('g-platforms').value = (game.platforms || []).join(', ');
+      $('g-genres').value = (game.genres || []).join(', ');
+      $('g-official-url').value = game.officialUrl || '';
+      $('g-draft').checked = !!game.draft;
+      $('g-related-posts').value = (game.relatedPosts || []).join(', ');
+      (game.scores || []).forEach((d) => addScoreRow(d));
+      (game.links || []).forEach((d) => addLinkRow(d));
+      (game.timeline || []).forEach((d) => addTimelineRow(d));
+      updateCoverPreview();
+      $('game-editor-title').textContent = `编辑：${game.title || slug}`;
+    }
+
+    async function openGameEditor(slug) {
+      gameSlug = slug ?? null;
+      $('g-status').textContent = '';
+      $('game-editor-title').textContent = slug ? `编辑：${slug}` : '新游戏';
+      $('g-slug').disabled = !!slug;
+      clearGameRows();
+      if (!slug) resetGameForm();
+      $('game-editor').classList.remove('hidden');
+      $('game-editor').scrollIntoView({ behavior: 'smooth' });
+      if (!slug) return;
+      try {
+        const { game } = await api(`/api/games/${slug}`);
+        fillGameForm(slug, game);
+      } catch (err) {
+        $('g-status').textContent = '失败：' + err.message;
+      }
+    }
+
+    async function loadPostsDatalist() {
+      try {
+        const { posts } = await api('/api/posts');
+        const dl = $('posts-datalist');
+        dl.innerHTML = '';
+        for (const p of posts.slice().sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'zh'))) {
+          const opt = document.createElement('option');
+          opt.value = p.slug;
+          opt.label = p.title || p.slug;
+          dl.appendChild(opt);
+        }
+      } catch { /* 静默失败，不影响编辑 */ }
+    }
+
+    async function afterAuth() {
+      show('admin');
+      await loadList();
+      loadPostsDatalist();
+      const params = new URLSearchParams(location.search);
+      // 深链：/admin?game=<slug> 直接进入游戏编辑
+      const gameParam = params.get('game');
+      if (gameParam) {
+        show('game');
+        await loadGames();
+        await openGameEditor(gameParam);
+        return;
+      }
+      // 深链：/admin?edit=<slug> 直接进入某篇文章的编辑（来自文章页「编辑本文」）
+      const editSlug = params.get('edit');
+      if (editSlug) openEditor(editSlug);
+    }
+
     $('login-form').onsubmit = async (e) => {
       e.preventDefault();
       $('login-error').classList.add('hidden');
       try {
         await api('/api/login', { method: 'POST', body: JSON.stringify({ password: $('password').value }) });
-        show('admin');
-        await loadList();
+        await afterAuth();
       } catch {
         $('login-error').classList.remove('hidden');
       }
@@ -209,6 +582,19 @@ import Base from '../../layouts/Base.astro';
     $('btn-about').onclick = openAbout;
     $('btn-cancel').onclick = () => $('editor').classList.add('hidden');
     $('btn-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
+
+    $('btn-games').onclick = async () => {
+      show('game');
+      try { await loadGames(); } catch { /* 401 已由 api() 处理 */ }
+    };
+    $('btn-back-posts').onclick = () => show('admin');
+    $('btn-new-game').onclick = () => openGameEditor(null);
+    $('btn-game-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
+    $('btn-add-score').onclick = () => addScoreRow();
+    $('btn-add-link').onclick = () => addLinkRow();
+    $('btn-add-timeline').onclick = () => addTimelineRow();
+    $('g-cancel').onclick = () => $('game-editor').classList.add('hidden');
+    $('g-cover').oninput = updateCoverPreview;
 
     $('editor').onsubmit = async (e) => {
       e.preventDefault();
@@ -248,15 +634,86 @@ import Base from '../../layouts/Base.astro';
       }
     };
 
+    $('game-editor').onsubmit = async (e) => {
+      e.preventDefault();
+      const status = $('g-status');
+      const btn = $('g-save');
+      const title = $('g-title').value.trim();
+      const cover = $('g-cover').value.trim();
+      const addedAt = $('g-added-date').value;
+      const officialUrl = $('g-official-url').value.trim();
+      const slug = $('g-slug').value.trim();
+      const isHttp = (u) => /^https?:\/\//i.test(u);
+
+      if (!title || !cover || !addedAt) {
+        status.textContent = '标题、封面图 URL、加入书架日期必填';
+        return;
+      }
+      if (!isHttp(cover)) {
+        status.textContent = '封面图 URL 需以 http(s):// 开头';
+        return;
+      }
+      if (officialUrl && !isHttp(officialUrl)) {
+        status.textContent = '官网 URL 需以 http(s):// 开头';
+        return;
+      }
+      if (!gameSlug && !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+        status.textContent = 'slug 只能包含小写字母、数字、连字符';
+        return;
+      }
+      const links = readLinkRows();
+      for (const link of links) {
+        if (!link.title || !link.url) {
+          status.textContent = '每条链接都需要标题和 URL';
+          return;
+        }
+        if (!isHttp(link.url)) {
+          status.textContent = `链接「${link.title}」的 URL 需以 http(s):// 开头`;
+          return;
+        }
+      }
+
+      const game = {
+        title,
+        originalTitle: $('g-original-title').value.trim() || undefined,
+        cover,
+        summary: $('g-summary').value.trim() || undefined,
+        developer: $('g-developer').value.trim() || undefined,
+        publisher: $('g-publisher').value.trim() || undefined,
+        releaseDate: $('g-release-date').value || undefined,
+        addedAt,
+        platforms: splitList($('g-platforms').value),
+        genres: splitList($('g-genres').value),
+        officialUrl: officialUrl || undefined,
+        scores: readScoreRows(),
+        relatedPosts: splitList($('g-related-posts').value),
+        links,
+        timeline: readTimelineRows(),
+        draft: $('g-draft').checked,
+      };
+
+      btn.disabled = true;
+      status.textContent = '提交中…';
+      try {
+        if (gameSlug) {
+          await api(`/api/games/${gameSlug}`, { method: 'PUT', body: JSON.stringify({ game }) });
+        } else {
+          await api('/api/games', { method: 'POST', body: JSON.stringify({ slug, game }) });
+        }
+        status.textContent = '已提交，约 1 分钟后上线';
+        await loadGames();
+      } catch (err) {
+        status.textContent = '失败：' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
     // 初始化：探测登录态
     (async () => {
       try {
         await api('/api/posts');
-        show('admin');
-        await loadList();
-        // 支持 /admin?edit=<slug> 直接进入某篇文章的编辑（来自文章页「编辑本文」）
-        const editSlug = new URLSearchParams(location.search).get('edit');
-        if (editSlug) openEditor(editSlug);
+        await afterAuth();
       } catch { /* 未登录，show('login') 已由 api() 处理 */ }
     })();
   </script>

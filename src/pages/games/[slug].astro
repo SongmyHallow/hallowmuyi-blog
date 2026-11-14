@@ -1,0 +1,192 @@
+---
+import Base from '../../layouts/Base.astro';
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import { formatGameDate } from '../../utils/gameMeta';
+import { formatDate } from '../../utils/postMeta';
+
+export async function getStaticPaths() {
+  const games = (await getCollection('games')).filter((game) => !game.data.draft);
+  return games.map((game) => ({
+    params: { slug: game.id },
+    props: { game },
+  }));
+}
+
+const { game } = Astro.props;
+const data = game.data;
+
+// 关联博客：过滤草稿，无效 slug 跳过
+const postsById = new Map(
+  (await getCollection('blog')).filter((post) => !post.data.draft).map((post) => [post.id, post]),
+);
+const relatedPosts = data.relatedPosts
+  .map((slug) => postsById.get(slug))
+  .filter((post): post is CollectionEntry<'blog'> => Boolean(post));
+
+// 时间线按日期倒序
+const timeline = [...data.timeline].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+
+// 基本信息：空值不显示
+const facts: { label: string; value: string }[] = [];
+if (data.developer) facts.push({ label: '开发商', value: data.developer });
+if (data.publisher) facts.push({ label: '发行商', value: data.publisher });
+if (data.releaseDate) facts.push({ label: '发售日期', value: formatGameDate(data.releaseDate) });
+if (data.platforms.length) facts.push({ label: '平台', value: data.platforms.join(' / ') });
+if (data.genres.length) facts.push({ label: '类型', value: data.genres.join(' / ') });
+
+const sectionTitle =
+  'mb-3 inline-block border-2 border-shadow bg-tint px-2 py-[3px] font-pixel text-xs tracking-[0.14em] dark:border-border-dark dark:bg-tint-dark';
+---
+
+<Base title={data.title} description={data.summary}>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <a href="/games" class="px-btn">← 返回书架</a>
+    <a
+      id="game-edit-link"
+      href={`/admin?game=${game.id}`}
+      class="hidden px-btn !text-accent dark:!text-accent-dark">编辑此游戏</a
+    >
+  </div>
+
+  <div class="grid items-start gap-6 sm:grid-cols-[240px_1fr] sm:gap-8">
+    <div class="mx-auto w-full max-w-[240px] sm:mx-0 sm:max-w-none">
+      <div class="px-card overflow-hidden">
+        <img
+          src={data.cover}
+          alt={`${data.title} 封面`}
+          decoding="async"
+          class="block aspect-[3/4] w-full object-cover"
+        />
+      </div>
+    </div>
+
+    <div>
+      <h1 class="font-pixel text-3xl leading-tight">{data.title}</h1>
+      {data.originalTitle && (
+        <p class="mt-1 font-pixel text-xs text-muted dark:text-muted-dark">{data.originalTitle}</p>
+      )}
+      {data.summary && (
+        <p class="mt-4 leading-relaxed text-muted dark:text-muted-dark">{data.summary}</p>
+      )}
+
+      {facts.length > 0 && (
+        <dl class="mt-5 space-y-1.5 text-sm">
+          {facts.map((fact) => (
+            <div class="flex gap-3">
+              <dt class="w-16 shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">{fact.label}</dt>
+              <dd class="leading-relaxed">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {data.officialUrl && (
+        <a href={data.officialUrl} target="_blank" rel="noopener noreferrer" class="px-btn mt-5">
+          官方网站 →
+        </a>
+      )}
+    </div>
+  </div>
+
+  {data.scores.length > 0 && (
+    <section class="mt-10">
+      <h2 class={sectionTitle}>评分</h2>
+      <div class="flex flex-wrap gap-2">
+        {data.scores.map((score) => (
+          <span class="inline-flex items-baseline gap-2 border-2 border-border bg-panel px-3 py-1.5 dark:border-border-dark dark:bg-panel-dark">
+            <span class="font-pixel text-xs text-muted dark:text-muted-dark">{score.source}</span>
+            <span class="font-pixel text-lg text-accent dark:text-accent-dark">{score.score}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {relatedPosts.length > 0 && (
+    <section class="mt-10">
+      <h2 class={sectionTitle}>关联博客</h2>
+      <ul>
+        {relatedPosts.map((post) => (
+          <li>
+            <a
+              href={`/blog/${post.id}/`}
+              class="group flex items-baseline justify-between gap-4 border-b border-dashed border-shadow py-2 dark:border-border-dark"
+            >
+              <span class="leading-snug group-hover:text-accent dark:group-hover:text-accent-dark">
+                {post.data.title}
+              </span>
+              <time class="shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
+                [{formatDate(post.data.date)}]
+              </time>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {data.links.length > 0 && (
+    <section class="mt-10">
+      <h2 class={sectionTitle}>外部链接存档</h2>
+      <ul>
+        {data.links.map((link) => (
+          <li>
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-dashed border-shadow py-2 hover:text-accent dark:border-border-dark dark:hover:text-accent-dark"
+            >
+              <span class="px-tag">{link.type === 'video' ? '视频' : '文章'}</span>
+              <span class="leading-snug">{link.title}</span>
+              {link.note && <span class="text-sm text-muted dark:text-muted-dark">{link.note}</span>}
+              {link.date && (
+                <time class="ml-auto shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
+                  {formatGameDate(link.date)}
+                </time>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {timeline.length > 0 && (
+    <section class="mt-10">
+      <h2 class={sectionTitle}>版本时间线</h2>
+      <ol class="ml-1.5 space-y-6 border-l-2 border-shadow dark:border-border-dark">
+        {timeline.map((item) => (
+          <li class="relative pl-5">
+            <span class="absolute -left-[7px] top-2 h-3 w-3 bg-accent dark:bg-accent-dark"></span>
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span class="font-pixel text-sm">{item.version}</span>
+              <time class="font-pixel text-xs text-muted dark:text-muted-dark">
+                {formatGameDate(item.date)}
+              </time>
+            </div>
+            <p class="mt-1 text-sm leading-relaxed">{item.summary}</p>
+            {item.url && (
+              <a href={item.url} target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-sm text-link underline decoration-dotted underline-offset-4 hover:no-underline dark:text-link-dark">
+                更新日志 →
+              </a>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )}
+</Base>
+
+<script is:inline>
+  // 已登录管理员：显示「编辑此游戏」入口
+  fetch('/api/session')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.authed) return;
+      var link = document.getElementById('game-edit-link');
+      if (link) link.classList.remove('hidden');
+    })
+    .catch(function () {});
+</script>

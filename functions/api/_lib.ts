@@ -183,6 +183,277 @@ export function composeMarkdown(p: PostInput): string {
   return lines.filter((l) => l !== null).join('\n');
 }
 
+// ---- 游戏书架（JSON 文件） ----
+
+const GAMES_DIR = 'src/content/games';
+const GAME_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export interface GameScore {
+  source: string;
+  score: string;
+}
+
+export interface GameLink {
+  title: string;
+  url: string;
+  type: 'article' | 'video';
+  note?: string;
+  date?: string;
+}
+
+export interface GameUpdate {
+  version: string;
+  date: string;
+  summary: string;
+  url?: string;
+}
+
+export interface GameInput {
+  title: string;
+  originalTitle?: string;
+  cover: string;
+  summary?: string;
+  developer?: string;
+  publisher?: string;
+  releaseDate?: string;
+  addedAt: string;
+  updatedAt: string;
+  platforms: string[];
+  genres: string[];
+  officialUrl?: string;
+  scores: GameScore[];
+  relatedPosts: string[];
+  links: GameLink[];
+  timeline: GameUpdate[];
+  draft: boolean;
+}
+
+export interface GameFile {
+  slug: string;
+  title: string;
+  cover: string;
+  draft: boolean;
+  addedAt: string;
+  updatedAt?: string;
+}
+
+function assertGameSlug(slug: string): void {
+  if (!GAME_SLUG_RE.test(slug)) throw new Error('slug 不合法');
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+// 只接受字符串/数字，避免把对象转成 "[object Object]"
+function text(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return '';
+}
+
+function optionalText(value: unknown): string | undefined {
+  return text(value) || undefined;
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+// 合法的 YYYY-MM-DD（同时排除 2024-02-31 这类溢出日期）
+function validDate(value: unknown): string | undefined {
+  const s = text(value);
+  if (!s || !DATE_RE.test(s)) return undefined;
+  const date = new Date(`${s}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== s) return undefined;
+  return s;
+}
+
+function normalizeDate(value: unknown, error: string): string | undefined {
+  if (value === undefined || value === null || text(value) === '') return undefined;
+  const date = validDate(value);
+  if (!date) throw new Error(error);
+  return date;
+}
+
+// 去空、去空白、去重
+function uniqStrings(value: unknown): string[] {
+  const out: string[] = [];
+  for (const item of asArray(value)) {
+    const s = text(item);
+    if (s && !out.includes(s)) out.push(s);
+  }
+  return out;
+}
+
+// 游戏条目「最近编辑日期」按北京时间取当天，避免 UTC 与本地日期错位
+function todayInShanghai(): string {
+  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+export function normalizeGame(input: unknown): GameInput {
+  const raw = asRecord(input);
+
+  const title = text(raw.title);
+  if (!title) throw new Error('标题必填');
+
+  const cover = text(raw.cover);
+  if (!cover || !isHttpUrl(cover)) throw new Error('封面图 URL 不合法');
+
+  const addedAt = normalizeDate(raw.addedAt, '加入书架日期不合法');
+  if (!addedAt) throw new Error('加入书架日期不合法');
+
+  const officialUrl = optionalText(raw.officialUrl);
+  if (officialUrl && !isHttpUrl(officialUrl)) throw new Error('官网 URL 不合法');
+
+  const scores: GameScore[] = [];
+  for (const item of asArray(raw.scores)) {
+    const score = asRecord(item);
+    const source = text(score.source);
+    const value = text(score.score);
+    if (source && value) scores.push({ source, score: value });
+  }
+
+  const links: GameLink[] = [];
+  for (const item of asArray(raw.links)) {
+    const link = asRecord(item);
+    const linkTitle = text(link.title);
+    const url = text(link.url);
+    if (!linkTitle || !url) continue;
+    if (!isHttpUrl(url)) throw new Error('链接 URL 不合法');
+    const entry: GameLink = {
+      title: linkTitle,
+      url,
+      type: link.type === 'video' ? 'video' : 'article',
+    };
+    const note = optionalText(link.note);
+    if (note) entry.note = note;
+    const date = normalizeDate(link.date, '链接日期不合法');
+    if (date) entry.date = date;
+    links.push(entry);
+  }
+
+  const timeline: GameUpdate[] = [];
+  for (const item of asArray(raw.timeline)) {
+    const update = asRecord(item);
+    const version = text(update.version);
+    const summary = text(update.summary);
+    const date = validDate(update.date);
+    if (!version || !summary || !date) continue;
+    const entry: GameUpdate = { version, date, summary };
+    const url = optionalText(update.url);
+    if (url) {
+      if (!isHttpUrl(url)) throw new Error('更新链接 URL 不合法');
+      entry.url = url;
+    }
+    timeline.push(entry);
+  }
+
+  const originalTitle = optionalText(raw.originalTitle);
+  const summary = optionalText(raw.summary);
+  const developer = optionalText(raw.developer);
+  const publisher = optionalText(raw.publisher);
+  const releaseDate = normalizeDate(raw.releaseDate, '发售日期不合法');
+
+  return {
+    title,
+    ...(originalTitle ? { originalTitle } : {}),
+    cover,
+    ...(summary ? { summary } : {}),
+    ...(developer ? { developer } : {}),
+    ...(publisher ? { publisher } : {}),
+    ...(releaseDate ? { releaseDate } : {}),
+    addedAt,
+    // 更新时间统一由服务端写入，忽略客户端传值
+    updatedAt: todayInShanghai(),
+    platforms: uniqStrings(raw.platforms),
+    genres: uniqStrings(raw.genres),
+    ...(officialUrl ? { officialUrl } : {}),
+    scores,
+    relatedPosts: uniqStrings(raw.relatedPosts),
+    links,
+    timeline,
+    draft: raw.draft === true || raw.draft === 'true',
+  };
+}
+
+export async function listGames(env: Env): Promise<GameFile[]> {
+  const res = await fetch(
+    `${GH_API}/repos/${env.GITHUB_REPO}/contents/${GAMES_DIR}`,
+    { headers: ghHeaders(env) }
+  );
+  if (res.status === 404) return []; // 目录尚未创建
+  if (!res.ok) throw new Error(`github list failed: ${res.status}`);
+  const files: { name: string }[] = await res.json();
+  const games = await Promise.all(
+    files
+      .filter((f) => f.name.endsWith('.json'))
+      .map(async (f): Promise<GameFile | null> => {
+        const slug = f.name.replace(/\.json$/, '');
+        try {
+          const { content } = await getFile(env, `${GAMES_DIR}/${f.name}`);
+          const data = asRecord(JSON.parse(content));
+          return {
+            slug,
+            title: text(data.title) || slug,
+            cover: text(data.cover),
+            draft: data.draft === true,
+            addedAt: text(data.addedAt),
+            updatedAt: optionalText(data.updatedAt),
+          };
+        } catch {
+          return null; // 单个文件失败跳过，不影响整体列表
+        }
+      })
+  );
+  return games.filter((g): g is GameFile => g !== null);
+}
+
+export async function getGame(env: Env, slug: string): Promise<{ sha: string; game: unknown }> {
+  assertGameSlug(slug);
+  const { sha, content } = await getFile(env, `${GAMES_DIR}/${slug}.json`);
+  try {
+    return { sha, game: JSON.parse(content) };
+  } catch {
+    throw new Error(`游戏文件解析失败：${slug}.json`);
+  }
+}
+
+export async function putGame(env: Env, slug: string, game: GameInput, sha?: string): Promise<void> {
+  assertGameSlug(slug);
+  const content = `${JSON.stringify(game, null, 2)}\n`;
+  await putFile(
+    env,
+    `${GAMES_DIR}/${slug}.json`,
+    content,
+    sha ? `game: update ${slug}` : `game: new ${slug}`,
+    sha
+  );
+}
+
+export async function deleteGame(env: Env, slug: string, sha: string): Promise<void> {
+  assertGameSlug(slug);
+  const res = await fetch(
+    `${GH_API}/repos/${env.GITHUB_REPO}/contents/${GAMES_DIR}/${slug}.json`,
+    {
+      method: 'DELETE',
+      headers: ghHeaders(env),
+      body: JSON.stringify({ message: `game: delete ${slug}`, sha, branch: 'master' }),
+    }
+  );
+  if (!res.ok) throw new Error(`github delete failed: ${res.status}`);
+}
+
 export function parseMarkdown(md: string): PostInput {
   const m = md.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!m) return { title: '', date: '', tags: [], draft: false, body: md };

@@ -138,6 +138,16 @@ img {
   box-shadow: none;
 }
 
+/* 排序/切换按钮选中态 */
+.px-btn[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-panel);
+}
+.dark .px-btn[aria-pressed="true"] {
+  background: var(--color-accent-dark);
+  color: var(--color-bg-dark);
+}
+
 /* 导航链接：hover 出现实心色块，不用下划线 */
 .px-nav-link {
   font-family: var(--font-pixel);

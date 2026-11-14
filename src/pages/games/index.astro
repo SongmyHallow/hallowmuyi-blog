@@ -1,0 +1,103 @@
+---
+import Base from '../../layouts/Base.astro';
+import GameCard from '../../components/GameCard.astro';
+import { getCollection } from 'astro:content';
+import { lastUpdatedAt, sortGames } from '../../utils/gameMeta';
+
+const games = sortGames(
+  (await getCollection('games')).filter((game) => !game.data.draft),
+  'updated',
+);
+---
+
+<Base title="游戏书架" description="玩过的、在玩的、想玩的游戏都在这里。">
+  <header class="mb-8">
+    <h1 class="mb-2 font-pixel text-2xl">游戏书架</h1>
+    <p class="font-pixel text-xs text-muted dark:text-muted-dark">GAME SHELF · TOTAL {games.length}</p>
+  </header>
+
+  {games.length > 0 ? (
+    <>
+      <div id="game-sort" class="mb-6 flex flex-wrap gap-2" role="group" aria-label="排序方式">
+        <button type="button" class="px-btn" data-sort="updated" aria-pressed="true">最近更新</button>
+        <button type="button" class="px-btn" data-sort="added" aria-pressed="false">加入书架</button>
+        <button type="button" class="px-btn" data-sort="release" aria-pressed="false">发售时间</button>
+      </div>
+
+      <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+        {games.map((game) => (
+          <li
+            data-title={game.data.title}
+            data-updated={lastUpdatedAt(game)}
+            data-added={game.data.addedAt.getTime()}
+            data-release={game.data.releaseDate?.getTime() ?? 0}
+          >
+            <GameCard game={game} />
+          </li>
+        ))}
+      </ul>
+    </>
+  ) : (
+    <section class="px-card p-8 text-center">
+      <p class="font-pixel text-2xl text-accent dark:text-accent-dark">NO GAMES</p>
+      <p class="mt-3 text-muted leading-relaxed dark:text-muted-dark">书架上还空着，先去读几篇文章吧。</p>
+      <a href="/blog" class="px-btn mt-6">去看文章 →</a>
+    </section>
+  )}
+</Base>
+
+<script is:inline>
+  (function () {
+    var grid = document.getElementById('game-grid');
+    if (!grid) return;
+
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('#game-sort .px-btn'));
+    var valid = { updated: true, added: true, release: true };
+    var title = function (el) { return el.getAttribute('data-title') || ''; };
+    var value = function (el, key) { return Number(el.getAttribute('data-' + key)) || 0; };
+
+    function sortBy(key) {
+      var items = Array.prototype.slice.call(grid.children);
+      items.sort(function (a, b) {
+        var diff;
+        if (key === 'release') {
+          var av = value(a, 'release');
+          var bv = value(b, 'release');
+          if (av === 0 && bv === 0) diff = 0;
+          else if (av === 0) diff = 1; // 没有发售日期排最后
+          else if (bv === 0) diff = -1;
+          else diff = bv - av;
+        } else {
+          diff = value(b, key) - value(a, key);
+        }
+        if (diff !== 0) return diff;
+        return title(a).localeCompare(title(b), 'zh-CN');
+      });
+      items.forEach(function (el) {
+        grid.appendChild(el);
+      });
+    }
+
+    function apply(key, updateUrl) {
+      if (!valid[key]) key = 'updated';
+      sortBy(key);
+      buttons.forEach(function (btn) {
+        btn.setAttribute('aria-pressed', btn.getAttribute('data-sort') === key ? 'true' : 'false');
+      });
+      if (updateUrl) {
+        var url = new URL(location.href);
+        url.searchParams.set('sort', key);
+        history.replaceState(null, '', url);
+      }
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        apply(btn.getAttribute('data-sort'), true);
+      });
+    });
+
+    var raw = new URLSearchParams(location.search).get('sort');
+    apply(valid[raw] ? raw : 'updated', raw !== null && !valid[raw]);
+  })();
+</script>

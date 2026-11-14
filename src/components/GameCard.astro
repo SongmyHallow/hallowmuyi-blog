@@ -1,0 +1,33 @@
+---
+import type { GameEntry } from '../utils/gameMeta';
+import { latestVersion } from '../utils/gameMeta';
+
+interface Props {
+  game: GameEntry;
+}
+
+const { game } = Astro.props;
+const version = latestVersion(game);
+---
+
+<a
+  href={`/games/${game.id}/`}
+  class="px-card group block overflow-hidden transition-transform duration-150 hover:-translate-y-1 hover:border-accent focus-visible:-translate-y-1 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:hover:border-accent-dark dark:focus-visible:border-accent-dark dark:focus-visible:outline-accent-dark"
+>
+  <div class="relative aspect-[3/4] overflow-hidden border-b-2 border-border bg-tint dark:border-border-dark dark:bg-tint-dark">
+    <img
+      src={game.data.cover}
+      alt={`${game.data.title} 封面`}
+      loading="lazy"
+      decoding="async"
+      class="h-full w-full object-cover"
+      onerror="this.style.display='none'"
+    />
+    {version && (
+      <span class="absolute right-1.5 top-1.5 border-2 border-border bg-panel px-1.5 py-1 font-pixel text-[10px] leading-none dark:border-border-dark dark:bg-panel-dark">
+        {version}
+      </span>
+    )}
+  </div>
+  <h3 class="line-clamp-2 px-2.5 py-2 font-pixel text-sm leading-snug sm:text-base">{game.data.title}</h3>
+</a>
