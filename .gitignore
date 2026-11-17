@@ -22,6 +22,8 @@ pnpm-debug.log*
 
 # 由 scripts/build-seed.mjs 生成的种子 SQL
 db/seed.sql
+# 从飞书 game-diary 导入的一次性数据（只入线上库，不进仓库）
+db/games-seed.sql
 
 # macOS-specific files
 .DS_Store
