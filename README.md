@@ -180,11 +180,18 @@ npm run deploy
 | `POST` | `/api/login` | 密码登录 |
 | `GET` | `/api/session` | 当前登录状态 |
 | `POST` | `/api/logout` | 退出 |
-| `GET` / `POST` | `/api/posts` | 文章列表 / 新建 |
-| `GET` / `PUT` / `DELETE` | `/api/posts/<slug>` | 单篇读取 / 更新 / 删除 |
-| `GET` / `POST` | `/api/games` | 游戏列表 / 新建 |
-| `GET` / `PUT` / `DELETE` | `/api/games/<slug>` | 单个游戏读取 / 更新 / 删除 |
-| `GET` / `PUT` | `/api/about` | 关于页读取 / 更新 |
+| `GET` / `POST` | `/api/posts` | 文章列表（`?q=` 搜索、`?full=1` 带正文） / 新建 |
+| `GET` / `PUT` / `PATCH` / `DELETE` | `/api/posts/<slug>` | 单篇读取 / 整体替换 / 局部更新 / 删除 |
+| `GET` / `POST` | `/api/games` | 游戏列表（`?q=` 搜索） / 新建 |
+| `GET` / `PUT` / `PATCH` / `DELETE` | `/api/games/<slug>` | 单个游戏读取 / 整体替换 / 局部更新 / 删除 |
+| `GET` / `PUT` / `PATCH` | `/api/about` | 关于页读取 / 整体替换 / 局部更新 |
+| `GET` | `/api/schema` | 机器可读的接口约定（公开，无需认证） |
+
+写操作支持三个约定，脚本和 agent 靠它们安全地改内容：
+
+- **版本号**：`GET` 返回的 `version` 是乐观锁版本；`PUT` / `PATCH` / `DELETE` 时用 `If-Match: <version>` 回传，版本不匹配返回 `409`（附上当前 `version`），记录不存在返回 `412`
+- **局部更新**：`PATCH` 只传要改的字段，服务端合并后做完整校验；数组字段是整体替换
+- **试运行**：`?dryRun=1` 或 `X-Dry-Run: 1` 只校验不落库
 
 另有 `/rss.xml`、`/sitemap.xml`、`/search-index.json` 三个运行时生成的资源。
 
@@ -197,19 +204,27 @@ export BLOG_API_TOKEN=...          # 与服务端 API_TOKEN 一致
 export BLOG_BASE_URL=http://localhost:4321   # 本地开发时；线上可省略
 
 npm run content -- games list
+npm run content -- games list --q 独立游戏
 npm run content -- games get hades --json
 npm run content -- games upsert --file hades.json    # 不存在则创建，存在则合并更新
-npm run content -- games update hades --file patch.json   # 只写要改的字段
+npm run content -- games update hades --file patch.json   # 只写要改的字段（PATCH）
+npm run content -- posts list --q 像素 --full
 npm run content -- posts create --file post.json
+npm run content -- posts update hello-world --file patch.json
 npm run content -- about update --file about.md
 npm run content -- export --out content.json          # 全量导出，改坏之前先备份
+npm run content -- schema                              # 打印 /api/schema，机器可读的接口约定
 ```
 
 约定：
 
-- `--file` 是 JSON，**顶层必须带 `slug`**，其余字段和接口一致；`update` / `upsert` 会先读当前记录再合并，嵌套数组整体替换
+- `--file` 是 JSON，`create` / `upsert` **顶层必须带 `slug`**，`update` 的 slug 来自命令行；`update` / `upsert` 走 `PATCH`，只合并传入的字段，数组整体替换
+- 默认带乐观锁：CLI 会先读取当前 `version` 再用 `If-Match` 提交，遇到 `409` 自动重读重试一次；确实想覆盖别人的改动时加 `--force`
+- `--dry-run` 只校验不落库，适合在批量写入前检查数据
 - 默认输出人类可读的摘要，`--json` 输出原始响应，适合程序解析
 - 成功退出码 `0`，参数错误 `2`，接口报错 `1`，错误信息直接来自服务端校验（中文）
+
+接口约定本身也有机器可读版本：[`/api/schema`](https://hallowmuyi.space/api/schema)（公开、缓存 5 分钟），写了每个资源的字段、必填项和错误语义，agent 可以先拉它再决定怎么调。
 
 token 在服务端配置：
 

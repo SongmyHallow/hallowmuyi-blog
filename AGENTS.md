@@ -13,6 +13,13 @@ Astro 7 SSR blog deployed on **Cloudflare Workers + D1** (not Cloudflare Pages).
 - Content automation goes through `scripts/content.mjs` (`npm run content -- ...`), which
   talks to the admin API with `Authorization: Bearer $BLOG_API_TOKEN` (server side:
   `API_TOKEN` secret). Prefer it over raw SQL or hand-written curl.
+- Writes use optimistic locking: `GET` returns `version`, and `PUT`/`PATCH`/`DELETE` send it
+  back as `If-Match` (mismatch → 409 with the current version). `PATCH` merges only the
+  supplied fields; `?dryRun=1` validates without writing. The machine-readable contract is
+  `GET /api/schema`.
+- Never run `git add -A`: this workspace is shared with other tooling and unrelated files
+  (`.lark-device.json`, QR images, one-off SQL) have been committed by accident before.
+  Stage explicit paths only.
 
 ## Development
 
