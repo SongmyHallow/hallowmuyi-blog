@@ -1,13 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import GameCard from '../../components/GameCard.astro';
-import { getCollection } from 'astro:content';
-import { lastUpdatedAt, sortGames } from '../../utils/gameMeta';
+import { listGames } from '../../lib/db';
+import { addedAtTime, lastUpdatedAt, releaseTime, sortGames } from '../../utils/gameMeta';
 
-const games = sortGames(
-  (await getCollection('games')).filter((game) => !game.data.draft),
-  'updated',
-);
+const games = sortGames(await listGames(), 'updated');
 ---
 
 <Base title="游戏书架" description="玩过的、在玩的、想玩的游戏都在这里。">
@@ -27,10 +24,10 @@ const games = sortGames(
       <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
         {games.map((game) => (
           <li
-            data-title={game.data.title}
+            data-title={game.title}
             data-updated={lastUpdatedAt(game)}
-            data-added={game.data.addedAt.getTime()}
-            data-release={game.data.releaseDate?.getTime() ?? 0}
+            data-added={addedAtTime(game)}
+            data-release={releaseTime(game) ?? 0}
           >
             <GameCard game={game} />
           </li>

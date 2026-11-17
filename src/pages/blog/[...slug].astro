@@ -1,55 +1,48 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Giscus from '../../components/Giscus.astro';
-import { getCollection, render } from 'astro:content';
+import { getNeighborPosts, getPost } from '../../lib/db';
+import { renderMarkdown } from '../../lib/markdown';
 import { postMeta, formatDate } from '../../utils/postMeta';
 
-export async function getStaticPaths() {
-  const posts = (await getCollection('blog'))
-    .filter((p) => !p.data.draft)
-    .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
-  return posts.map((post, i) => ({
-    params: { slug: post.id },
-    props: {
-      post,
-      prev: posts[i - 1] ?? null, // 更早的一篇
-      next: posts[i + 1] ?? null, // 更新的一篇
-    },
-  }));
+const slug = Astro.params.slug ?? '';
+const post = slug ? await getPost(slug) : null;
+
+if (!post || post.draft) {
+  const notFound = await Astro.rewrite('/404');
+  return new Response(notFound.body, { status: 404, headers: notFound.headers });
 }
 
-const { post, prev, next } = Astro.props;
-const { Content } = await render(post);
-const { words, minutes } = postMeta(post.body ?? '');
+const { newer, older } = await getNeighborPosts(post.slug, post.date);
+const html = renderMarkdown(post.body);
+const { words, minutes } = postMeta(post.body);
 ---
 
-<Base title={post.data.title} description={post.data.description}>
+<Base title={post.title} description={post.description}>
   <article>
     <header class="mb-10">
-      <h1 class="font-pixel text-4xl leading-tight mb-4">{post.data.title}</h1>
+      <h1 class="font-pixel text-4xl leading-tight mb-4">{post.title}</h1>
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 font-pixel text-xs text-muted dark:text-muted-dark">
-        <time>[{formatDate(post.data.date)}]</time>
+        <time>[{formatDate(post.date)}]</time>
         <span class="opacity-50">·</span>
         <span>{words} 字 · 约 {minutes} 分钟</span>
-        {post.data.tags.map((t) => (
+        {post.tags.map((t) => (
           <a href={`/tags/${t}`} class="px-tag">#{t}</a>
         ))}
       </div>
     </header>
-    <div class="prose-blog">
-      <Content />
-    </div>
+    <div class="prose-blog" set:html={html} />
     <nav class="mt-16 grid sm:grid-cols-2 gap-4">
-      {prev ? (
-        <a href={`/blog/${prev.id}`} class="px-card p-4 hover:border-accent dark:hover:border-accent-dark">
+      {older ? (
+        <a href={`/blog/${older.slug}`} class="px-card p-4 hover:border-accent dark:hover:border-accent-dark">
           <span class="font-pixel text-xs text-muted dark:text-muted-dark">← 上一篇</span>
-          <span class="block mt-2 leading-snug">{prev.data.title}</span>
+          <span class="block mt-2 leading-snug">{older.title}</span>
         </a>
       ) : <span />}
-      {next ? (
-        <a href={`/blog/${next.id}`} class="px-card p-4 sm:text-right hover:border-accent dark:hover:border-accent-dark">
+      {newer ? (
+        <a href={`/blog/${newer.slug}`} class="px-card p-4 sm:text-right hover:border-accent dark:hover:border-accent-dark">
           <span class="font-pixel text-xs text-muted dark:text-muted-dark">下一篇 →</span>
-          <span class="block mt-2 leading-snug">{next.data.title}</span>
+          <span class="block mt-2 leading-snug">{newer.title}</span>
         </a>
       ) : <span />}
     </nav>

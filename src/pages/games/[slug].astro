@@ -1,50 +1,43 @@
 ---
 import Base from '../../layouts/Base.astro';
-import type { CollectionEntry } from 'astro:content';
-import { getCollection } from 'astro:content';
+import { getGame, listPosts } from '../../lib/db';
 import { formatGameDate } from '../../utils/gameMeta';
 import { formatDate } from '../../utils/postMeta';
 
-export async function getStaticPaths() {
-  const games = (await getCollection('games')).filter((game) => !game.data.draft);
-  return games.map((game) => ({
-    params: { slug: game.id },
-    props: { game },
-  }));
+const game = await getGame(Astro.params.slug ?? '');
+
+if (!game || game.draft) {
+  const notFound = await Astro.rewrite('/404');
+  return new Response(notFound.body, { status: 404, headers: notFound.headers });
 }
 
-const { game } = Astro.props;
-const data = game.data;
-
 // 关联博客：过滤草稿，无效 slug 跳过
-const postsById = new Map(
-  (await getCollection('blog')).filter((post) => !post.data.draft).map((post) => [post.id, post]),
-);
-const relatedPosts = data.relatedPosts
-  .map((slug) => postsById.get(slug))
-  .filter((post): post is CollectionEntry<'blog'> => Boolean(post));
+const postsBySlug = new Map((await listPosts()).map((post) => [post.slug, post]));
+const relatedPosts = game.relatedPosts
+  .map((slug) => postsBySlug.get(slug))
+  .filter((post) => Boolean(post));
 
 // 时间线按日期倒序
-const timeline = [...data.timeline].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+const timeline = [...game.timeline].sort((a, b) => (a.date < b.date ? 1 : -1));
 
 // 基本信息：空值不显示
 const facts: { label: string; value: string }[] = [];
-if (data.developer) facts.push({ label: '开发商', value: data.developer });
-if (data.publisher) facts.push({ label: '发行商', value: data.publisher });
-if (data.releaseDate) facts.push({ label: '发售日期', value: formatGameDate(data.releaseDate) });
-if (data.platforms.length) facts.push({ label: '平台', value: data.platforms.join(' / ') });
-if (data.genres.length) facts.push({ label: '类型', value: data.genres.join(' / ') });
+if (game.developer) facts.push({ label: '开发商', value: game.developer });
+if (game.publisher) facts.push({ label: '发行商', value: game.publisher });
+if (game.releaseDate) facts.push({ label: '发售日期', value: formatGameDate(game.releaseDate) });
+if (game.platforms.length) facts.push({ label: '平台', value: game.platforms.join(' / ') });
+if (game.genres.length) facts.push({ label: '类型', value: game.genres.join(' / ') });
 
 const sectionTitle =
   'mb-3 inline-block border-2 border-shadow bg-tint px-2 py-[3px] font-pixel text-xs tracking-[0.14em] dark:border-border-dark dark:bg-tint-dark';
 ---
 
-<Base title={data.title} description={data.summary}>
+<Base title={game.title} description={game.summary}>
   <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <a href="/games" class="px-btn">← 返回书架</a>
     <a
       id="game-edit-link"
-      href={`/admin?game=${game.id}`}
+      href={`/admin?game=${game.slug}`}
       class="hidden px-btn !text-accent dark:!text-accent-dark">编辑此游戏</a
     >
   </div>
@@ -53,8 +46,8 @@ const sectionTitle =
     <div class="mx-auto w-full max-w-[240px] sm:mx-0 sm:max-w-none">
       <div class="px-card overflow-hidden">
         <img
-          src={data.cover}
-          alt={`${data.title} 封面`}
+          src={game.cover}
+          alt={`${game.title} 封面`}
           decoding="async"
           class="block aspect-[3/4] w-full object-cover"
         />
@@ -62,12 +55,12 @@ const sectionTitle =
     </div>
 
     <div>
-      <h1 class="font-pixel text-3xl leading-tight">{data.title}</h1>
-      {data.originalTitle && (
-        <p class="mt-1 font-pixel text-xs text-muted dark:text-muted-dark">{data.originalTitle}</p>
+      <h1 class="font-pixel text-3xl leading-tight">{game.title}</h1>
+      {game.originalTitle && (
+        <p class="mt-1 font-pixel text-xs text-muted dark:text-muted-dark">{game.originalTitle}</p>
       )}
-      {data.summary && (
-        <p class="mt-4 leading-relaxed text-muted dark:text-muted-dark">{data.summary}</p>
+      {game.summary && (
+        <p class="mt-4 leading-relaxed text-muted dark:text-muted-dark">{game.summary}</p>
       )}
 
       {facts.length > 0 && (
@@ -81,19 +74,19 @@ const sectionTitle =
         </dl>
       )}
 
-      {data.officialUrl && (
-        <a href={data.officialUrl} target="_blank" rel="noopener noreferrer" class="px-btn mt-5">
+      {game.officialUrl && (
+        <a href={game.officialUrl} target="_blank" rel="noopener noreferrer" class="px-btn mt-5">
           官方网站 →
         </a>
       )}
     </div>
   </div>
 
-  {data.scores.length > 0 && (
+  {game.scores.length > 0 && (
     <section class="mt-10">
       <h2 class={sectionTitle}>评分</h2>
       <div class="flex flex-wrap gap-2">
-        {data.scores.map((score) => (
+        {game.scores.map((score) => (
           <span class="inline-flex items-baseline gap-2 border-2 border-border bg-panel px-3 py-1.5 dark:border-border-dark dark:bg-panel-dark">
             <span class="font-pixel text-xs text-muted dark:text-muted-dark">{score.source}</span>
             <span class="font-pixel text-lg text-accent dark:text-accent-dark">{score.score}</span>
@@ -110,14 +103,14 @@ const sectionTitle =
         {relatedPosts.map((post) => (
           <li>
             <a
-              href={`/blog/${post.id}/`}
+              href={`/blog/${post.slug}/`}
               class="group flex items-baseline justify-between gap-4 border-b border-dashed border-shadow py-2 dark:border-border-dark"
             >
               <span class="leading-snug group-hover:text-accent dark:group-hover:text-accent-dark">
-                {post.data.title}
+                {post.title}
               </span>
               <time class="shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
-                [{formatDate(post.data.date)}]
+                [{formatDate(post.date)}]
               </time>
             </a>
           </li>
@@ -126,11 +119,11 @@ const sectionTitle =
     </section>
   )}
 
-  {data.links.length > 0 && (
+  {game.links.length > 0 && (
     <section class="mt-10">
       <h2 class={sectionTitle}>外部链接存档</h2>
       <ul>
-        {data.links.map((link) => (
+        {game.links.map((link) => (
           <li>
             <a
               href={link.url}

@@ -1,15 +1,20 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getEntry, render } from 'astro:content';
+import { getPage } from '../lib/db';
+import { renderMarkdown } from '../lib/markdown';
 
-const about = await getEntry('pages', 'about');
-const { Content } = await render(about!);
+const about = await getPage('about');
+
+if (!about) {
+  const notFound = await Astro.rewrite('/404');
+  return new Response(notFound.body, { status: 404, headers: notFound.headers });
+}
+
+const html = renderMarkdown(about.body);
 ---
 
-<Base title={about!.data.title}>
-  <h1 class="font-pixel text-2xl mb-2">{about!.data.title}</h1>
+<Base title={about.title}>
+  <h1 class="font-pixel text-2xl mb-2">{about.title}</h1>
   <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-8">ABOUT</p>
-  <div class="prose-blog">
-    <Content />
-  </div>
+  <div class="prose-blog" set:html={html} />
 </Base>

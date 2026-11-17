@@ -1,12 +1,12 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getCollection } from 'astro:content';
+import { listPosts } from '../../lib/db';
 
-const posts = (await getCollection('blog')).filter((p) => !p.data.draft);
+const posts = await listPosts();
 
 const tagCount = new Map<string, number>();
-for (const p of posts) {
-  for (const t of p.data.tags) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+for (const post of posts) {
+  for (const tag of post.tags) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
 }
 const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]);
 ---

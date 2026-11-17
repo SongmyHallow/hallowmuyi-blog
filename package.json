@@ -8,15 +8,24 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "preview": "astro build && wrangler dev --config dist/server/wrangler.json --persist-to .wrangler/state",
+    "astro": "astro",
+    "db:seed": "node scripts/build-seed.mjs",
+    "db:local:init": "wrangler d1 execute hallowmuyi --local --file=db/schema.sql",
+    "db:local:seed": "node scripts/build-seed.mjs && wrangler d1 execute hallowmuyi --local --file=db/seed.sql",
+    "db:remote:init": "wrangler d1 execute hallowmuyi --remote --file=db/schema.sql",
+    "db:remote:seed": "node scripts/build-seed.mjs && wrangler d1 execute hallowmuyi --remote --file=db/seed.sql",
+    "deploy": "astro build && node scripts/deploy.mjs"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.4.8",
     "@astrojs/rss": "^4.0.19",
-    "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.5",
     "astro": "^7.4.7",
     "marked": "^18.2.0",
     "tailwindcss": "^4.3.5"
+  },
+  "devDependencies": {
+    "wrangler": "^4.163.0"
   }
 }

@@ -1,5 +1,8 @@
----
+﻿---
 import Base from '../../layouts/Base.astro';
+
+// 后台是纯客户端页面，构建时预渲染成静态文件即可，不需要每次请求都跑一遍服务端。
+export const prerender = true;
 ---
 
 <Base title="管理">
@@ -34,7 +37,7 @@ import Base from '../../layouts/Base.astro';
           <button id="btn-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
         </div>
       </div>
-      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后约 1 分钟自动部署上线。</p>
+      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后立即生效，无需重新部署。</p>
 
       <ul id="post-list" class="space-y-3 mb-12"></ul>
 
@@ -97,7 +100,7 @@ import Base from '../../layouts/Base.astro';
           <button id="btn-game-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
         </div>
       </div>
-      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后约 1 分钟自动部署上线。</p>
+      <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后立即生效，无需重新部署。</p>
 
       <ul id="game-list" class="space-y-3 mb-12"></ul>
 
@@ -309,7 +312,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     async function del(slug) {
-      if (!confirm(`确定删除「${slug}」？此操作会把文件从仓库移除。`)) return;
+      if (!confirm(`确定删除「${slug}」？此操作会把数据从数据库删除。`)) return;
       await api(`/api/posts/${slug}`, { method: 'DELETE' });
       await loadList();
     }
@@ -361,7 +364,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     async function delGame(slug) {
-      if (!confirm(`确定删除游戏「${slug}」？此操作会把文件从仓库移除。`)) return;
+      if (!confirm(`确定删除游戏「${slug}」？此操作会把数据从数据库删除。`)) return;
       await api(`/api/games/${slug}`, { method: 'DELETE' });
       await loadGames();
     }
@@ -603,7 +606,7 @@ import Base from '../../layouts/Base.astro';
       if (aboutMode) {
         try {
           await api('/api/about', { method: 'PUT', body: JSON.stringify({ body: $('f-body').value }) });
-          $('save-status').textContent = '已提交，约 1 分钟后上线';
+          $('save-status').textContent = '已保存，立即生效';
         } catch (err) {
           $('save-status').textContent = '失败：' + err.message;
         } finally {
@@ -625,7 +628,7 @@ import Base from '../../layouts/Base.astro';
         } else {
           await api('/api/posts', { method: 'POST', body: JSON.stringify({ slug: $('f-slug').value, post }) });
         }
-        $('save-status').textContent = '已提交，约 1 分钟后上线';
+        $('save-status').textContent = '已保存，立即生效';
         await loadList();
       } catch (err) {
         $('save-status').textContent = '失败：' + err.message;
@@ -700,7 +703,7 @@ import Base from '../../layouts/Base.astro';
         } else {
           await api('/api/games', { method: 'POST', body: JSON.stringify({ slug, game }) });
         }
-        status.textContent = '已提交，约 1 分钟后上线';
+        status.textContent = '已保存，立即生效';
         await loadGames();
       } catch (err) {
         status.textContent = '失败：' + err.message;

@@ -12,13 +12,22 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-
-# environment variables
+# environment variables（含本地 wrangler 的 .dev.vars）
 .env
 .env.production
+.dev.vars
+
+# Cloudflare 本地状态（本地 D1 数据库等）
+.wrangler/
+
+# 由 scripts/build-seed.mjs 生成的种子 SQL
+db/seed.sql
 
 # macOS-specific files
 .DS_Store
 
 # jetbrains setting folder
 .idea/
+
+# Trae IDE 工作区（AI 生成的 spec，设计结论已在 docs/ 中）
+.trae/

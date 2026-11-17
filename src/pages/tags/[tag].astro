@@ -1,23 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
 import PostCard from '../../components/PostCard.astro';
-import { getCollection } from 'astro:content';
+import { listPosts } from '../../lib/db';
 
-export async function getStaticPaths() {
-  const posts = (await getCollection('blog')).filter((p) => !p.data.draft);
-  const tags = new Set(posts.flatMap((p) => p.data.tags));
-  return [...tags].map((tag) => ({
-    params: { tag },
-    props: {
-      tag,
-      posts: posts
-        .filter((p) => p.data.tags.includes(tag))
-        .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
-    },
-  }));
+const tag = Astro.params.tag ?? '';
+const posts = (await listPosts()).filter((post) => post.tags.includes(tag));
+
+if (posts.length === 0) {
+  const notFound = await Astro.rewrite('/404');
+  return new Response(notFound.body, { status: 404, headers: notFound.headers });
 }
-
-const { tag, posts } = Astro.props;
 ---
 
 <Base title={`#${tag}`}>

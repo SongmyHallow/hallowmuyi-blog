@@ -1,26 +1,22 @@
 import rss from '@astrojs/rss';
-import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
-import { marked } from 'marked';
-
-// marked 安全配置：去掉可能被滥用的原生 HTML 渲染
-marked.setOptions({ headerIds: false, mangle: false, breaks: true });
+import { listPosts } from '../lib/db';
+import { renderMarkdown } from '../lib/markdown';
+import { parseDate } from '../utils/postMeta';
 
 export async function GET(context: APIContext) {
-  const posts = (await getCollection('blog'))
-    .filter((p) => !p.data.draft)
-    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+  const posts = await listPosts();
   return rss({
     title: 'MUYI BLOG',
     description: '记录与思考的角落',
     site: context.site!,
-    items: posts.map((p) => ({
-      title: p.data.title,
-      description: p.data.description,
-      pubDate: p.data.date,
-      link: `/blog/${p.id}/`,
-      categories: p.data.tags,
-      content: marked.parse(p.body),
+    items: posts.map((post) => ({
+      title: post.title,
+      description: post.description,
+      pubDate: parseDate(post.date),
+      link: `/blog/${post.slug}/`,
+      categories: post.tags,
+      content: renderMarkdown(post.body),
     })),
   });
 }

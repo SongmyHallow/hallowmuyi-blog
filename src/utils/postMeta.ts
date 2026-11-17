@@ -11,6 +11,20 @@ export function postMeta(body: string): { words: number; minutes: number } {
   return { words, minutes };
 }
 
-export function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+/** 把 YYYY-MM-DD 解析成 UTC 零点，避免本地时区把日期挪一天 */
+export function parseDate(value: string): Date {
+  return new Date(`${value}T00:00:00Z`);
+}
+
+export function formatDate(value: Date | string): string {
+  return (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
+}
+
+/** MM-DD，用于首页任务日志这类紧凑展示 */
+export function monthDay(value: string): string {
+  return value.slice(5, 10);
+}
+
+export function yearOf(value: string): number {
+  return Number(value.slice(0, 4));
 }

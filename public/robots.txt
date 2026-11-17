@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: https://hallowmuyi.space/sitemap-index.xml
+Sitemap: https://hallowmuyi.space/sitemap.xml

@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hallowmuyi-blog",
+  "compatibility_date": "2026-11-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  // 自定义域不写在这里：@astrojs/cloudflare 构建时会重写 wrangler 配置并丢掉
+  // root 配置里的 routes，所以域名绑定在 scripts/deploy.mjs 里注入。
+  // 如需改域名，改 scripts/deploy.mjs 的 ROUTES。
+  // 站点数据全部存这里。创建数据库后把返回的 database_id 填进来：
+  //   npx wrangler d1 create hallowmuyi
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hallowmuyi",
+      "database_id": "1f2cfe52-abce-40bc-93f0-b3dac6759fdc"
+    }
+  ]
+}

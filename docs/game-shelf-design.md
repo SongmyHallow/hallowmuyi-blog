@@ -2,6 +2,7 @@
 
 > 状态：已实施并上线（commit `eb58389`） · v1 · 2026-11-14
 > 范围：新增 `/games` 游戏书架、`/games/[slug]` 详情页、顶栏入口、后台游戏管理与游戏接口。色板、字体、组件体系沿用 pixel-design.md，不新增颜色。
+> **2026-11 更新**：数据层已从「GitHub 仓库 JSON + 构建期 content collection」迁移到 Cloudflare D1 + Workers 运行时读库，接口路径与字段不变；本文中涉及 GitHub Contents API、提交触发部署、构建期生成的描述均为历史实现，现状以仓库根目录 `README.md` 为准。
 
 ---
 

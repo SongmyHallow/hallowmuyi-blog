@@ -1,58 +1,73 @@
-import type { CollectionEntry } from 'astro:content';
+import type { Game } from '../lib/types';
 
 export type GameSort = 'updated' | 'added' | 'release';
-export type GameEntry = CollectionEntry<'games'>;
+
+function toTime(date: string | undefined): number | undefined {
+  if (!date) return undefined;
+  const time = Date.parse(`${date}T00:00:00Z`);
+  return Number.isNaN(time) ? undefined : time;
+}
 
 // timeline 中日期最新的一条
-function latestTimeline(game: GameEntry): GameEntry['data']['timeline'][number] | undefined {
-  return game.data.timeline.reduce<GameEntry['data']['timeline'][number] | undefined>(
+function latestTimeline(game: Game): Game['timeline'][number] | undefined {
+  return game.timeline.reduce<Game['timeline'][number] | undefined>(
     (latest, item) => (!latest || item.date > latest.date ? item : latest),
-    undefined,
+    undefined
   );
 }
 
-export function latestTimelineDate(game: GameEntry): Date | undefined {
+export function latestTimelineDate(game: Game): string | undefined {
   return latestTimeline(game)?.date;
 }
 
 // 取 timeline 中日期最新一条的版本号
-export function latestVersion(game: GameEntry): string | undefined {
+export function latestVersion(game: Game): string | undefined {
   return latestTimeline(game)?.version;
 }
 
 // 最近更新时间：max(updatedAt, timeline 最新日期, addedAt)
-export function lastUpdatedAt(game: GameEntry): number {
-  const times = [game.data.addedAt.getTime()];
-  if (game.data.updatedAt) times.push(game.data.updatedAt.getTime());
+export function lastUpdatedAt(game: Game): number {
+  const times = [toTime(game.addedAt) ?? 0];
+  const updated = toTime(game.updatedAt);
+  if (updated !== undefined) times.push(updated);
   const timelineDate = latestTimelineDate(game);
-  if (timelineDate) times.push(timelineDate.getTime());
+  const timelineTime = toTime(timelineDate);
+  if (timelineTime !== undefined) times.push(timelineTime);
   return Math.max(...times);
 }
 
-// 同值时按标题排序，保证顺序稳定
-function byTitle(a: GameEntry, b: GameEntry): number {
-  return a.data.title.localeCompare(b.data.title, 'zh-CN');
+export function addedAtTime(game: Game): number {
+  return toTime(game.addedAt) ?? 0;
 }
 
-export function sortGames(games: GameEntry[], sort: GameSort): GameEntry[] {
+export function releaseTime(game: Game): number | undefined {
+  return toTime(game.releaseDate);
+}
+
+// 同值时按标题排序，保证顺序稳定
+function byTitle(a: Game, b: Game): number {
+  return a.title.localeCompare(b.title, 'zh-CN');
+}
+
+export function sortGames(games: Game[], sort: GameSort): Game[] {
   const sorted = [...games];
   if (sort === 'release') {
     return sorted.sort((a, b) => {
-      const ta = a.data.releaseDate?.getTime();
-      const tb = b.data.releaseDate?.getTime();
+      const ta = releaseTime(a);
+      const tb = releaseTime(b);
       if (ta === undefined && tb === undefined) return byTitle(a, b);
       if (ta === undefined) return 1; // 没有发售日期排最后
       if (tb === undefined) return -1;
       return tb !== ta ? tb - ta : byTitle(a, b);
     });
   }
-  const keyOf = sort === 'added' ? (g: GameEntry) => g.data.addedAt.getTime() : lastUpdatedAt;
+  const keyOf = sort === 'added' ? addedAtTime : lastUpdatedAt;
   return sorted.sort((a, b) => {
     const diff = keyOf(b) - keyOf(a);
     return diff !== 0 ? diff : byTitle(a, b);
   });
 }
 
-export function formatGameDate(date: Date | undefined): string {
-  return date ? date.toISOString().slice(0, 10) : '—';
+export function formatGameDate(date: string | undefined): string {
+  return date || '—';
 }
