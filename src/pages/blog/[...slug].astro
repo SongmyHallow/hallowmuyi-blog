@@ -14,38 +14,98 @@ if (!post || post.draft) {
 }
 
 const { newer, older } = await getNeighborPosts(post.slug, post.date);
-const html = renderMarkdown(post.body);
 const { words, minutes } = postMeta(post.body);
+
+// 给 h2/h3 生成锚点，同时收集右侧目录
+const toc: { id: string; text: string; level: number }[] = [];
+const html = renderMarkdown(post.body).replace(/<h([23])>(.*?)<\/h\1>/g, (_match, level, inner) => {
+  const id = `sec-${toc.length + 1}`;
+  toc.push({ id, text: inner.replace(/<[^>]+>/g, '').trim(), level: Number(level) });
+  return `<h${level} id="${id}">${inner}</h${level}>`;
+});
 ---
 
 <Base title={post.title} description={post.description}>
-  <article>
-    <header class="mb-10">
-      <h1 class="font-pixel text-4xl leading-tight mb-4">{post.title}</h1>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 font-pixel text-xs text-muted dark:text-muted-dark">
-        <time>[{formatDate(post.date)}]</time>
-        <span class="opacity-50">·</span>
-        <span>{words} 字 · 约 {minutes} 分钟</span>
-        {post.tags.map((t) => (
-          <a href={`/tags/${t}`} class="px-tag">#{t}</a>
-        ))}
+  <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px] xl:gap-16">
+    <article class="min-w-0 max-w-[46rem]">
+      <header class="mb-10 border-b-2 border-dashed border-shadow pb-6 dark:border-border-dark">
+        <p class="font-pixel text-xs text-muted dark:text-muted-dark">QUEST LOG / {formatDate(post.date)}</p>
+        <h1 class="mt-3 font-pixel text-3xl leading-tight sm:text-4xl lg:text-[42px]">{post.title}</h1>
+        <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 font-pixel text-xs text-muted dark:text-muted-dark">
+          <time>[{formatDate(post.date)}]</time>
+          <span class="opacity-50">·</span>
+          <span>{words} 字 · 约 {minutes} 分钟</span>
+          {post.tags.map((t) => (
+            <a href={`/tags/${t}`} class="px-tag">#{t}</a>
+          ))}
+        </div>
+      </header>
+
+      <div class="prose-blog" set:html={html} />
+
+      <nav class="mt-16 grid gap-4 sm:grid-cols-2">
+        {older ? (
+          <a href={`/blog/${older.slug}`} class="px-card p-4 transition-colors hover:border-accent dark:hover:border-accent-dark">
+            <span class="font-pixel text-xs text-muted dark:text-muted-dark">← 上一篇</span>
+            <span class="mt-2 block leading-snug">{older.title}</span>
+          </a>
+        ) : <span class="hidden sm:block" />}
+        {newer ? (
+          <a href={`/blog/${newer.slug}`} class="px-card p-4 transition-colors hover:border-accent sm:text-right dark:hover:border-accent-dark">
+            <span class="font-pixel text-xs text-muted dark:text-muted-dark">下一篇 →</span>
+            <span class="mt-2 block leading-snug">{newer.title}</span>
+          </a>
+        ) : <span class="hidden sm:block" />}
+      </nav>
+
+      <Giscus />
+    </article>
+
+    <aside class="hidden lg:block">
+      <div class="sticky top-24 space-y-5">
+        <section class="px-card p-4">
+          <h2 class="mb-3 font-pixel text-xs text-muted dark:text-muted-dark">存档信息</h2>
+          <dl class="space-y-2 font-pixel text-xs">
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-muted dark:text-muted-dark">日期</dt>
+              <dd>{formatDate(post.date)}</dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-muted dark:text-muted-dark">字数</dt>
+              <dd>{words}</dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-muted dark:text-muted-dark">阅读</dt>
+              <dd>约 {minutes} 分钟</dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-muted dark:text-muted-dark">标签</dt>
+              <dd>{post.tags.length ? post.tags.length : '—'}</dd>
+            </div>
+          </dl>
+        </section>
+
+        {toc.length > 1 && (
+          <nav class="px-card p-4" aria-label="目录">
+            <h2 class="mb-3 font-pixel text-xs text-muted dark:text-muted-dark">目录</h2>
+            <ol class="space-y-1.5">
+              {toc.map((item) => (
+                <li class={item.level === 3 ? 'pl-3' : ''}>
+                  <a
+                    href={`#${item.id}`}
+                    class="block truncate text-sm leading-relaxed text-muted transition-colors hover:text-accent dark:text-muted-dark dark:hover:text-accent-dark"
+                  >
+                    {item.level === 2 ? '▸ ' : '· '}
+                    {item.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+
+        <a href="#top" class="px-btn w-full text-center">↑ 回到顶部</a>
       </div>
-    </header>
-    <div class="prose-blog" set:html={html} />
-    <nav class="mt-16 grid sm:grid-cols-2 gap-4">
-      {older ? (
-        <a href={`/blog/${older.slug}`} class="px-card p-4 hover:border-accent dark:hover:border-accent-dark">
-          <span class="font-pixel text-xs text-muted dark:text-muted-dark">← 上一篇</span>
-          <span class="block mt-2 leading-snug">{older.title}</span>
-        </a>
-      ) : <span />}
-      {newer ? (
-        <a href={`/blog/${newer.slug}`} class="px-card p-4 sm:text-right hover:border-accent dark:hover:border-accent-dark">
-          <span class="font-pixel text-xs text-muted dark:text-muted-dark">下一篇 →</span>
-          <span class="block mt-2 leading-snug">{newer.title}</span>
-        </a>
-      ) : <span />}
-    </nav>
-    <Giscus />
-  </article>
+    </aside>
+  </div>
 </Base>

@@ -44,6 +44,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* 顶部固定导航占位，锚点跳转不要被盖住 */
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -87,6 +89,48 @@ body {
 
 img {
   image-rendering: pixelated;
+}
+
+/* 键盘可达性：统一的像素风焦点框 */
+:where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.dark :where(a, button, input, textarea, select, summary):focus-visible {
+  outline-color: var(--color-accent-dark);
+}
+
+/* ---------- 桌面端排版：放大字号与行距分层 ---------- */
+
+@media (min-width: 1024px) {
+  body {
+    font-size: 18px;
+    line-height: 1.85;
+  }
+
+  .px-nav-link {
+    font-size: 13px;
+    padding: 3px 9px;
+  }
+
+  .px-btn {
+    font-size: 13px;
+    padding: 6px 13px;
+  }
+
+  .px-tag {
+    font-size: 13px;
+    padding: 0 6px;
+  }
+
+  .menu-row {
+    padding: 9px 12px;
+  }
+
+  .prose-blog {
+    font-size: 17.5px;
+    line-height: 1.95;
+  }
 }
 
 /* ---------- 组件 ---------- */

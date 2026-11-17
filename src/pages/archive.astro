@@ -15,25 +15,41 @@ const years = [...byYear.keys()].sort((a, b) => b - a);
 ---
 
 <Base title="归档">
-  <h1 class="font-pixel text-2xl mb-2">归档</h1>
-  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-10">ARCHIVE</p>
-  {years.map((year) => (
-    <section class="mb-10">
-      <h2 class="font-pixel text-2xl mb-4 pb-2 border-b-2 border-dashed border-shadow dark:border-border-dark">
-        <span class="text-accent dark:text-accent-dark">▸</span> {year}
-      </h2>
-      <ul class="space-y-2">
-        {byYear.get(year)!.map((post) => (
-          <li class="flex items-baseline gap-3">
-            <time class="font-pixel text-xs text-muted dark:text-muted-dark shrink-0 w-24">
-              [{formatDate(post.date)}]
-            </time>
-            <a href={`/blog/${post.slug}`} class="leading-snug hover:bg-accent hover:text-panel dark:hover:bg-accent-dark dark:hover:text-bg-dark px-1">
-              {post.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  ))}
+  <header class="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-dashed border-shadow pb-4 dark:border-border-dark">
+    <div>
+      <h1 class="font-pixel text-2xl lg:text-3xl">归档</h1>
+      <p class="mt-2 font-pixel text-xs text-muted dark:text-muted-dark">ARCHIVE · {posts.length} 篇存档</p>
+    </div>
+    <a href="/blog" class="px-btn">← 回到文章列表</a>
+  </header>
+
+  {years.length > 0 ? (
+    <div class={`grid items-start gap-10 ${years.length > 1 ? 'lg:grid-cols-2 lg:gap-x-14' : ''}`}>
+      {years.map((year) => (
+        <section>
+          <h2 class="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-dashed border-shadow pb-2 font-pixel text-xl dark:border-border-dark lg:text-2xl">
+            <span><span class="text-accent dark:text-accent-dark">▸</span> {year}</span>
+            <span class="font-pixel text-xs text-muted dark:text-muted-dark">{byYear.get(year)!.length} 篇</span>
+          </h2>
+          <ul class="space-y-2.5">
+            {byYear.get(year)!.map((post) => (
+              <li class="flex items-baseline gap-3">
+                <time class="w-24 shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
+                  [{formatDate(post.date)}]
+                </time>
+                <a
+                  href={`/blog/${post.slug}`}
+                  class="px-1 leading-snug transition-colors hover:bg-accent hover:text-panel dark:hover:bg-accent-dark dark:hover:text-bg-dark"
+                >
+                  {post.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <p class="text-muted dark:text-muted-dark">还没有文章。</p>
+  )}
 </Base>

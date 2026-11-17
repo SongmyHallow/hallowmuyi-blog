@@ -8,20 +8,24 @@ const games = sortGames(await listGames(), 'updated');
 ---
 
 <Base title="游戏书架" description="玩过的、在玩的、想玩的游戏都在这里。">
-  <header class="mb-8">
-    <h1 class="mb-2 font-pixel text-2xl">游戏书架</h1>
-    <p class="font-pixel text-xs text-muted dark:text-muted-dark">GAME SHELF · TOTAL {games.length}</p>
-  </header>
+  <header class="mb-8 flex flex-wrap items-end justify-between gap-4 border-b-2 border-dashed border-shadow pb-4 dark:border-border-dark">
+    <div>
+      <h1 class="font-pixel text-2xl lg:text-3xl">游戏书架</h1>
+      <p class="mt-2 font-pixel text-xs text-muted dark:text-muted-dark">GAME SHELF · TOTAL {games.length}</p>
+    </div>
 
-  {games.length > 0 ? (
-    <>
-      <div id="game-sort" class="mb-6 flex flex-wrap gap-2" role="group" aria-label="排序方式">
+    {games.length > 0 && (
+      <div id="game-sort" class="flex flex-wrap gap-2" role="group" aria-label="排序方式">
         <button type="button" class="px-btn" data-sort="updated" aria-pressed="true">最近更新</button>
         <button type="button" class="px-btn" data-sort="added" aria-pressed="false">加入书架</button>
         <button type="button" class="px-btn" data-sort="release" aria-pressed="false">发售时间</button>
       </div>
+    )}
+  </header>
 
-      <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+  {games.length > 0 ? (
+    <>
+      <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
         {games.map((game) => (
           <li
             data-title={game.title}

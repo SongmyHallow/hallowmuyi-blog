@@ -4,7 +4,7 @@ import PostCard from '../../components/PostCard.astro';
 import { listPosts } from '../../lib/db';
 
 const tag = Astro.params.tag ?? '';
-const posts = (await listPosts()).filter((post) => post.tags.includes(tag));
+const posts = tag ? (await listPosts()).filter((post) => post.tags.includes(tag)) : [];
 
 if (posts.length === 0) {
   const notFound = await Astro.rewrite('/404');
@@ -12,10 +12,16 @@ if (posts.length === 0) {
 }
 ---
 
-<Base title={`#${tag}`}>
-  <h1 class="font-pixel text-2xl mb-2">#{tag}</h1>
-  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-8">{posts.length} 篇文章</p>
-  <div class="space-y-6">
+<Base title={`标签：${tag}`}>
+  <header class="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-dashed border-shadow pb-4 dark:border-border-dark">
+    <div>
+      <h1 class="font-pixel text-2xl lg:text-3xl">#{tag}</h1>
+      <p class="mt-2 font-pixel text-xs text-muted dark:text-muted-dark">TAG · {posts.length} 篇存档</p>
+    </div>
+    <a href="/tags" class="px-btn">← 全部标签</a>
+  </header>
+
+  <div class={`grid items-start gap-6 ${posts.length > 1 ? 'lg:grid-cols-2 lg:gap-7' : ''}`}>
     {posts.map((post) => <PostCard post={post} />)}
   </div>
 </Base>

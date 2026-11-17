@@ -42,7 +42,7 @@ const sectionTitle =
     >
   </div>
 
-  <div class="grid items-start gap-6 sm:grid-cols-[240px_1fr] sm:gap-8">
+  <div class="grid items-start gap-7 sm:grid-cols-[240px_1fr] sm:gap-8 lg:grid-cols-[300px_1fr] lg:gap-12">
     <div class="mx-auto w-full max-w-[240px] sm:mx-0 sm:max-w-none">
       <div class="px-card overflow-hidden">
         <img
@@ -55,16 +55,16 @@ const sectionTitle =
     </div>
 
     <div>
-      <h1 class="font-pixel text-3xl leading-tight">{game.title}</h1>
+      <h1 class="font-pixel text-3xl leading-tight lg:text-[44px]">{game.title}</h1>
       {game.originalTitle && (
-        <p class="mt-1 font-pixel text-xs text-muted dark:text-muted-dark">{game.originalTitle}</p>
+        <p class="mt-2 font-pixel text-xs text-muted dark:text-muted-dark">{game.originalTitle}</p>
       )}
       {game.summary && (
-        <p class="mt-4 leading-relaxed text-muted dark:text-muted-dark">{game.summary}</p>
+        <p class="mt-5 max-w-[58ch] leading-relaxed text-muted dark:text-muted-dark">{game.summary}</p>
       )}
 
       {facts.length > 0 && (
-        <dl class="mt-5 space-y-1.5 text-sm">
+        <dl class="mt-6 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
           {facts.map((fact) => (
             <div class="flex gap-3">
               <dt class="w-16 shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">{fact.label}</dt>
@@ -75,101 +75,103 @@ const sectionTitle =
       )}
 
       {game.officialUrl && (
-        <a href={game.officialUrl} target="_blank" rel="noopener noreferrer" class="px-btn mt-5">
+        <a href={game.officialUrl} target="_blank" rel="noopener noreferrer" class="px-btn mt-6">
           官方网站 →
         </a>
       )}
     </div>
   </div>
 
-  {game.scores.length > 0 && (
-    <section class="mt-10">
-      <h2 class={sectionTitle}>评分</h2>
-      <div class="flex flex-wrap gap-2">
-        {game.scores.map((score) => (
-          <span class="inline-flex items-baseline gap-2 border-2 border-border bg-panel px-3 py-1.5 dark:border-border-dark dark:bg-panel-dark">
-            <span class="font-pixel text-xs text-muted dark:text-muted-dark">{score.source}</span>
-            <span class="font-pixel text-lg text-accent dark:text-accent-dark">{score.score}</span>
-          </span>
-        ))}
-      </div>
-    </section>
-  )}
+  <div class="mt-12 grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+    {game.scores.length > 0 && (
+      <section class="lg:col-span-5">
+        <h2 class={sectionTitle}>评分</h2>
+        <div class="flex flex-wrap gap-2">
+          {game.scores.map((score) => (
+            <span class="inline-flex items-baseline gap-2 border-2 border-border bg-panel px-3 py-1.5 dark:border-border-dark dark:bg-panel-dark">
+              <span class="font-pixel text-xs text-muted dark:text-muted-dark">{score.source}</span>
+              <span class="font-pixel text-lg text-accent dark:text-accent-dark">{score.score}</span>
+            </span>
+          ))}
+        </div>
+      </section>
+    )}
 
-  {relatedPosts.length > 0 && (
-    <section class="mt-10">
-      <h2 class={sectionTitle}>关联博客</h2>
-      <ul>
-        {relatedPosts.map((post) => (
-          <li>
-            <a
-              href={`/blog/${post.slug}/`}
-              class="group flex items-baseline justify-between gap-4 border-b border-dashed border-shadow py-2 dark:border-border-dark"
-            >
-              <span class="leading-snug group-hover:text-accent dark:group-hover:text-accent-dark">
-                {post.title}
-              </span>
-              <time class="shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
-                [{formatDate(post.date)}]
-              </time>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
-
-  {game.links.length > 0 && (
-    <section class="mt-10">
-      <h2 class={sectionTitle}>外部链接存档</h2>
-      <ul>
-        {game.links.map((link) => (
-          <li>
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-dashed border-shadow py-2 hover:text-accent dark:border-border-dark dark:hover:text-accent-dark"
-            >
-              <span class="px-tag">{link.type === 'video' ? '视频' : '文章'}</span>
-              <span class="leading-snug">{link.title}</span>
-              {link.note && <span class="text-sm text-muted dark:text-muted-dark">{link.note}</span>}
-              {link.date && (
-                <time class="ml-auto shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
-                  {formatGameDate(link.date)}
+    {relatedPosts.length > 0 && (
+      <section class="lg:col-span-7">
+        <h2 class={sectionTitle}>关联博客</h2>
+        <ul>
+          {relatedPosts.map((post) => (
+            <li>
+              <a
+                href={`/blog/${post.slug}/`}
+                class="group flex items-baseline justify-between gap-4 border-b border-dashed border-shadow py-2 dark:border-border-dark"
+              >
+                <span class="leading-snug group-hover:text-accent dark:group-hover:text-accent-dark">
+                  {post.title}
+                </span>
+                <time class="shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
+                  [{formatDate(post.date)}]
                 </time>
-              )}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
-
-  {timeline.length > 0 && (
-    <section class="mt-10">
-      <h2 class={sectionTitle}>版本时间线</h2>
-      <ol class="ml-1.5 space-y-6 border-l-2 border-shadow dark:border-border-dark">
-        {timeline.map((item) => (
-          <li class="relative pl-5">
-            <span class="absolute -left-[7px] top-2 h-3 w-3 bg-accent dark:bg-accent-dark"></span>
-            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span class="font-pixel text-sm">{item.version}</span>
-              <time class="font-pixel text-xs text-muted dark:text-muted-dark">
-                {formatGameDate(item.date)}
-              </time>
-            </div>
-            <p class="mt-1 text-sm leading-relaxed">{item.summary}</p>
-            {item.url && (
-              <a href={item.url} target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-sm text-link underline decoration-dotted underline-offset-4 hover:no-underline dark:text-link-dark">
-                更新日志 →
               </a>
-            )}
-          </li>
-        ))}
-      </ol>
-    </section>
-  )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {game.links.length > 0 && (
+      <section class="lg:col-span-12">
+        <h2 class={sectionTitle}>外部链接存档</h2>
+        <ul class="grid gap-x-10 lg:grid-cols-2">
+          {game.links.map((link) => (
+            <li>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-dashed border-shadow py-2 hover:text-accent dark:border-border-dark dark:hover:text-accent-dark"
+              >
+                <span class="px-tag">{link.type === 'video' ? '视频' : '文章'}</span>
+                <span class="leading-snug">{link.title}</span>
+                {link.note && <span class="text-sm text-muted dark:text-muted-dark">{link.note}</span>}
+                {link.date && (
+                  <time class="ml-auto shrink-0 font-pixel text-xs text-muted dark:text-muted-dark">
+                    {formatGameDate(link.date)}
+                  </time>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {timeline.length > 0 && (
+      <section class="lg:col-span-12">
+        <h2 class={sectionTitle}>版本时间线</h2>
+        <ol class="ml-1.5 border-l-2 border-shadow dark:border-border-dark">
+          {timeline.map((item) => (
+            <li class="relative py-3 pl-6">
+              <span class="absolute -left-[7px] top-5 h-3 w-3 bg-accent dark:bg-accent-dark"></span>
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span class="font-pixel text-sm">{item.version}</span>
+                <time class="font-pixel text-xs text-muted dark:text-muted-dark">
+                  {formatGameDate(item.date)}
+                </time>
+              </div>
+              <p class="mt-1 max-w-[60ch] text-sm leading-relaxed">{item.summary}</p>
+              {item.url && (
+                <a href={item.url} target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-sm text-link underline decoration-dotted underline-offset-4 hover:no-underline dark:text-link-dark">
+                  更新日志 →
+                </a>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+  </div>
 </Base>
 
 <script is:inline>

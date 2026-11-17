@@ -3,29 +3,37 @@ import Base from '../../layouts/Base.astro';
 import { listPosts } from '../../lib/db';
 
 const posts = await listPosts();
-
-const tagCount = new Map<string, number>();
+const counts = new Map<string, number>();
 for (const post of posts) {
-  for (const tag of post.tags) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+  for (const tag of post.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
 }
-const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]);
+const tags = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'));
 ---
 
 <Base title="标签">
-  <h1 class="font-pixel text-2xl mb-2">标签</h1>
-  <p class="font-pixel text-xs text-muted dark:text-muted-dark mb-10">TAGS {tags.length}</p>
-  {tags.length === 0 ? (
-    <p class="text-muted dark:text-muted-dark">还没有标签。</p>
-  ) : (
+  <header class="mb-10 flex flex-wrap items-end justify-between gap-4 border-b-2 border-dashed border-shadow pb-4 dark:border-border-dark">
+    <div>
+      <h1 class="font-pixel text-2xl lg:text-3xl">物品栏</h1>
+      <p class="mt-2 font-pixel text-xs text-muted dark:text-muted-dark">ITEM BAG · {tags.length} 个标签</p>
+    </div>
+    <a href="/blog" class="px-btn">← 回到文章列表</a>
+  </header>
+
+  {tags.length > 0 ? (
     <ul class="flex flex-wrap gap-3">
       {tags.map(([tag, count]) => (
         <li>
-          <a href={`/tags/${tag}`} class="px-tag inline-flex items-center gap-2 !py-1">
-            <span>#{tag}</span>
-            <span class="opacity-60">{count}</span>
+          <a
+            href={`/tags/${tag}`}
+            class="px-card inline-flex items-baseline gap-3 px-4 py-3 transition-colors hover:border-accent dark:hover:border-accent-dark"
+          >
+            <span class="font-pixel text-base lg:text-lg">#{tag}</span>
+            <span class="font-pixel text-xs text-muted dark:text-muted-dark">{count}</span>
           </a>
         </li>
       ))}
     </ul>
+  ) : (
+    <p class="text-muted dark:text-muted-dark">还没有标签。</p>
   )}
 </Base>

@@ -9,6 +9,7 @@ interface Props {
 const { title, description = '记录与思考的角落' } = Astro.props;
 const fullTitle = title === '首页' ? 'MUYI BLOG' : `${title} · MUYI BLOG`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const year = new Date().getFullYear();
 ---
 
 <!doctype html>
@@ -46,11 +47,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       })();
     </script>
   </head>
-  <body class="min-h-screen flex flex-col">
-    <header class="border-b-2 border-border dark:border-border-dark">
-      <nav class="max-w-2xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <a href="/" class="font-pixel text-2xl leading-none tracking-widest shrink-0 flex items-center">MUYI<span class="inline-block w-2 h-2 ml-1.5 bg-accent dark:bg-accent-dark"></span></a>
-        <div class="flex items-center gap-1 sm:gap-2">
+  <body id="top" class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-40 border-b-2 border-border bg-bg dark:border-border-dark dark:bg-bg-dark">
+      <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 sm:px-8 lg:px-10">
+        <a href="/" class="font-pixel text-2xl lg:text-[26px] leading-none tracking-widest shrink-0 flex items-center">MUYI<span class="inline-block w-2 h-2 ml-1.5 bg-accent dark:bg-accent-dark"></span></a>
+        <div class="flex items-center gap-1 sm:gap-2 lg:gap-3">
           <a href="/blog" class="px-nav-link">文章</a>
           <a href="/archive" class="px-nav-link">归档</a>
           <a href="/tags" class="px-nav-link">标签</a>
@@ -100,23 +101,36 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           </button>
         </div>
       </nav>
-      <div id="search-panel" class="hidden border-t-2 border-border dark:border-border-dark">
-        <div class="max-w-2xl mx-auto px-6 py-3">
+      <div id="search-panel" class="hidden border-t-2 border-border bg-bg dark:border-border-dark dark:bg-bg-dark">
+        <div class="mx-auto max-w-6xl px-5 py-4 sm:px-8 lg:px-10">
           <input
             id="search-input"
             type="search"
-            placeholder="搜索文章…"
+            placeholder="搜索文章…（按 / 快速打开）"
             autocomplete="off"
-            class="w-full bg-panel dark:bg-panel-dark border-2 border-border dark:border-border-dark outline-none text-base px-3 py-1.5 placeholder:text-muted dark:placeholder:text-muted-dark focus:border-accent dark:focus:border-accent-dark"
+            class="w-full max-w-2xl bg-panel dark:bg-panel-dark border-2 border-border dark:border-border-dark outline-none text-base px-3 py-2 placeholder:text-muted dark:placeholder:text-muted-dark focus:border-accent dark:focus:border-accent-dark"
           />
-          <ul id="search-results" class="mt-2 space-y-1"></ul>
+          <ul id="search-results" class="mt-2 max-w-2xl space-y-1"></ul>
         </div>
       </div>
     </header>
 
-    <main class="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-12">
-      <slot />
+    <main class="w-full flex-1">
+      <div class="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+        <slot />
+      </div>
     </main>
+
+    <footer class="mt-8 border-t-2 border-border dark:border-border-dark">
+      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-7 font-pixel text-xs text-muted dark:text-muted-dark sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
+        <p>MUYI BLOG · {year} · THANKS FOR PLAYING</p>
+        <div class="flex items-center gap-4">
+          <a href="/rss.xml" class="hover:text-accent dark:hover:text-accent-dark">RSS</a>
+          <a href="/sitemap.xml" class="hover:text-accent dark:hover:text-accent-dark">SITEMAP</a>
+          <a href="https://github.com/SongmyHallow/hallowmuyi-blog" target="_blank" rel="noopener noreferrer" class="hover:text-accent dark:hover:text-accent-dark">GITHUB</a>
+        </div>
+      </div>
+    </footer>
 
     <script is:inline>
       document.getElementById('theme-toggle').addEventListener('click', function () {
@@ -201,6 +215,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         document.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
             panel.classList.add('hidden');
+            return;
+          }
+          if (e.key === '/' && panel.classList.contains('hidden')) {
+            var target = e.target;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+            e.preventDefault();
+            toggle();
           }
         });
       })();
