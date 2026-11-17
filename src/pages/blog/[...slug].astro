@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Giscus from '../../components/Giscus.astro';
+import Comments from '../../components/Comments.astro';
 import { getNeighborPosts, getPost } from '../../lib/db';
 import { renderMarkdown } from '../../lib/markdown';
 import { postMeta, formatDate } from '../../utils/postMeta';
@@ -58,7 +58,7 @@ const html = renderMarkdown(post.body).replace(/<h([23])>(.*?)<\/h\1>/g, (_match
         ) : <span class="hidden sm:block" />}
       </nav>
 
-      <Giscus />
+      <Comments slug={post.slug} />
     </article>
 
     <aside class="hidden lg:block">

@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import type { Game, Page, Post } from './types';
+import type { Comment, CommentStatus, Game, Page, Post } from './types';
 
 /**
  * 所有内容读写都走 Cloudflare D1。页面在请求时读库，后台保存后立即生效，
@@ -414,3 +414,118 @@ export async function savePage(page: Page): Promise<string> {
     .first<{ updated_at: string }>();
   return row?.updated_at ?? '';
 }
+
+/* ------------------------------- 评论 ------------------------------- */
+
+interface CommentRow {
+  id: number;
+  slug: string;
+  nickname: string;
+  email: string;
+  body: string;
+  status: string;
+  created_at: string;
+}
+
+const COMMENT_COLUMNS = 'id, slug, nickname, email, body, status, created_at';
+
+function rowToComment(row: CommentRow): Comment {
+  const status = row.status === 'approved' || row.status === 'hidden' ? row.status : 'pending';
+  return {
+    id: row.id,
+    slug: row.slug,
+    nickname: row.nickname,
+    email: row.email ?? '',
+    body: row.body ?? '',
+    status,
+    createdAt: row.created_at,
+  };
+}
+
+/** 文章页展示用：只返回已通过的评论，按时间正序。 */
+export async function listApprovedComments(slug: string): Promise<Comment[]> {
+  const { results } = await db()
+    .prepare(
+      `SELECT ${COMMENT_COLUMNS} FROM comments
+       WHERE slug = ?1 AND status = 'approved'
+       ORDER BY created_at ASC, id ASC`
+    )
+    .bind(slug)
+    .all<CommentRow>();
+  return (results ?? []).map(rowToComment);
+}
+
+/** 后台审核用：默认全部状态，按提交时间倒序。 */
+export async function listComments(
+  options: { status?: CommentStatus; limit?: number } = {}
+): Promise<Comment[]> {
+  const limit = Math.min(Math.max(options.limit ?? 200, 1), 500);
+  if (options.status) {
+    const { results } = await db()
+      .prepare(
+        `SELECT ${COMMENT_COLUMNS} FROM comments
+         WHERE status = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2`
+      )
+      .bind(options.status, limit)
+      .all<CommentRow>();
+    return (results ?? []).map(rowToComment);
+  }
+  const { results } = await db()
+    .prepare(`SELECT ${COMMENT_COLUMNS} FROM comments ORDER BY created_at DESC, id DESC LIMIT ?1`)
+    .bind(limit)
+    .all<CommentRow>();
+  return (results ?? []).map(rowToComment);
+}
+
+export async function getComment(id: number): Promise<Comment | null> {
+  const row = await db()
+    .prepare(`SELECT ${COMMENT_COLUMNS} FROM comments WHERE id = ?1`)
+    .bind(id)
+    .first<CommentRow>();
+  return row ? rowToComment(row) : null;
+}
+
+export async function createComment(input: {
+  slug: string;
+  nickname: string;
+  email: string;
+  body: string;
+  ipHash: string;
+}): Promise<number> {
+  const row = await db()
+    .prepare(
+      `INSERT INTO comments (slug, nickname, email, body, status, ip_hash)
+       VALUES (?1, ?2, ?3, ?4, 'pending', ?5)
+       RETURNING id`
+    )
+    .bind(input.slug, input.nickname, input.email, input.body, input.ipHash)
+    .first<{ id: number }>();
+  return row?.id ?? 0;
+}
+
+export async function setCommentStatus(id: number, status: CommentStatus): Promise<boolean> {
+  const result = await db()
+    .prepare('UPDATE comments SET status = ?2 WHERE id = ?1')
+    .bind(id, status)
+    .run();
+  return (result.meta?.changes ?? 0) > 0;
+}
+
+export async function deleteComment(id: number): Promise<boolean> {
+  const result = await db().prepare('DELETE FROM comments WHERE id = ?1').bind(id).run();
+  return (result.meta?.changes ?? 0) > 0;
+}
+
+/**
+ * 限流：同一 IP 在最近 N 分钟内提交了几条。
+ * created_at 与 toISOString() 同为 `YYYY-MM-DDTHH:mm:ss.sssZ`，可直接按字符串比较。
+ */
+export async function countRecentComments(ipHash: string, minutes = 10): Promise<number> {
+  const cutoff = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+  const row = await db()
+    .prepare('SELECT COUNT(*) AS n FROM comments WHERE ip_hash = ?1 AND created_at >= ?2')
+    .bind(ipHash, cutoff)
+    .first<{ n: number }>();
+  return row?.n ?? 0;
+}
+

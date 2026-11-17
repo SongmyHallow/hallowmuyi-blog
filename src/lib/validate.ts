@@ -179,3 +179,40 @@ export function normalizeGame(slug: string, input: unknown): Game {
 export function isValidSlug(slug: string): boolean {
   return SLUG_RE.test(slug);
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** 去掉控制字符，保留换行；把连续空白压成一个空格。 */
+function cleanSingleLine(value: unknown): string {
+  return text(value)
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export interface CommentInput {
+  nickname: string;
+  email: string;
+  body: string;
+}
+
+/** 访客评论：昵称必填、邮箱可选、正文纯文本；长度与链接数量做基本约束。 */
+export function normalizeComment(input: unknown): CommentInput {
+  const raw = asRecord(input);
+  const nickname = cleanSingleLine(raw.nickname);
+  if (!nickname) fail('昵称必填');
+  if ([...nickname].length > 20) fail('昵称最多 20 个字');
+
+  const email = text(raw.email);
+  if (email && !EMAIL_RE.test(email)) fail('邮箱格式不正确');
+
+  const body = (typeof raw.body === 'string' ? raw.body : '')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+    .replace(/\r\n/g, '\n')
+    .trim();
+  if (!body) fail('评论内容不能为空');
+  if ([...body].length > 1000) fail('评论最多 1000 字');
+  if ((body.match(/https?:\/\//gi) ?? []).length > 3) fail('评论里的链接太多了');
+
+  return { nickname, email, body };
+}

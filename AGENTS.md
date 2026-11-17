@@ -20,6 +20,11 @@ Astro 7 SSR blog deployed on **Cloudflare Workers + D1** (not Cloudflare Pages).
 - Never run `git add -A`: this workspace is shared with other tooling and unrelated files
   (`.lark-device.json`, QR images, one-off SQL) have been committed by accident before.
   Stage explicit paths only.
+- Comments are self-hosted (no Giscus): `comments` table, public `POST /api/comments`
+  (honeypot field `website`, 3 per IP per 10 minutes), moderation via `PATCH
+  /api/comments/<id>` with `{status: 'pending'|'approved'|'hidden'}`, admin UI at
+  `/admin` → 「评论审核」. New comments default to `pending` and are invisible on the
+  public page until approved. Keep the honeypot and rate limit in `src/pages/api/comments.ts`.
 
 ## Development
 

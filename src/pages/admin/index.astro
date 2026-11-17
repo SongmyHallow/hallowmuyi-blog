@@ -1,4 +1,4 @@
-﻿---
+---
 import Base from '../../layouts/Base.astro';
 
 // 后台是纯客户端页面，构建时预渲染成静态文件即可，不需要每次请求都跑一遍服务端。
@@ -34,6 +34,7 @@ export const prerender = true;
           <button id="btn-new" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 新文章</button>
           <button id="btn-about" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">编辑关于页</button>
           <button id="btn-games" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">游戏管理</button>
+          <button id="btn-comments" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">评论审核</button>
           <button id="btn-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
         </div>
       </div>
@@ -223,12 +224,34 @@ export const prerender = true;
       </form>
     </div>
 
+    <!-- 评论审核视图 -->
+    <div id="comments-view" class="hidden">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold">评论审核</h1>
+        <div class="flex gap-4 text-sm">
+          <button id="btn-back-from-comments" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">← 返回文章</button>
+          <button id="btn-comments-logout" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">退出</button>
+        </div>
+      </div>
+      <p class="text-xs text-muted dark:text-muted-dark mb-6">新留言默认「待审核」，通过后才会出现在文章页；邮箱只有你能看到。</p>
+
+      <div id="comment-filters" class="flex flex-wrap gap-2 mb-8 text-sm">
+        <button data-filter="pending" aria-pressed="true" class="px-3 py-1 border-2 border-border dark:border-border-dark cursor-pointer aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-bg-dark">待审核</button>
+        <button data-filter="approved" aria-pressed="false" class="px-3 py-1 border-2 border-border dark:border-border-dark cursor-pointer aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-bg-dark">已通过</button>
+        <button data-filter="hidden" aria-pressed="false" class="px-3 py-1 border-2 border-border dark:border-border-dark cursor-pointer aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-bg-dark">已隐藏</button>
+        <button data-filter="all" aria-pressed="false" class="px-3 py-1 border-2 border-border dark:border-border-dark cursor-pointer aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-bg-dark">全部</button>
+      </div>
+
+      <ul id="comment-list" class="space-y-4"></ul>
+      <p id="comment-status" class="mt-6 text-sm text-muted dark:text-muted-dark"></p>
+    </div>
+
     <p id="loading" class="text-muted dark:text-muted-dark">加载中…</p>
   </div>
 
   <script is:inline>
     const $ = (id) => document.getElementById(id);
-    const views = { login: $('login-view'), admin: $('admin-view'), game: $('game-view'), loading: $('loading') };
+    const views = { login: $('login-view'), admin: $('admin-view'), game: $('game-view'), comments: $('comments-view'), loading: $('loading') };
     let editingSlug = null; // null = 新建
     let aboutMode = false; // true = 编辑关于页
 
@@ -236,6 +259,7 @@ export const prerender = true;
       views.login.classList.toggle('hidden', name !== 'login');
       views.admin.classList.toggle('hidden', name !== 'admin');
       views.game.classList.toggle('hidden', name !== 'game');
+      views.comments.classList.toggle('hidden', name !== 'comments');
       views.loading.classList.toggle('hidden', name !== 'loading');
     }
 
@@ -315,6 +339,79 @@ export const prerender = true;
       if (!confirm(`确定删除「${slug}」？此操作会把数据从数据库删除。`)) return;
       await api(`/api/posts/${slug}`, { method: 'DELETE' });
       await loadList();
+    }
+
+    /* ---------- 评论审核 ---------- */
+    const STATUS_LABEL = { pending: '待审核', approved: '已通过', hidden: '已隐藏' };
+    let commentFilter = 'pending';
+
+    function when(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' });
+    }
+
+    function setCommentFilter(filter) {
+      commentFilter = filter;
+      document.querySelectorAll('#comment-filters [data-filter]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.filter === filter));
+      });
+      loadComments().catch((err) => ($('comment-status').textContent = '加载失败：' + err.message));
+    }
+
+    async function loadComments() {
+      const list = $('comment-list');
+      $('comment-status').textContent = '加载中…';
+      const query = commentFilter === 'all' ? '' : `?status=${commentFilter}`;
+      const { comments } = await api('/api/comments' + query);
+      list.innerHTML = '';
+      $('comment-status').textContent = comments.length ? `共 ${comments.length} 条` : '这里还没有评论。';
+      if (!comments.length) return;
+      for (const c of comments) {
+        const li = document.createElement('li');
+        li.className = 'border-2 border-border dark:border-border-dark p-4 space-y-2';
+        li.innerHTML = `
+          <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs">
+            <span class="flex flex-wrap items-center gap-2">
+              <strong class="text-sm">${esc(c.nickname)}</strong>
+              <span class="text-muted dark:text-muted-dark">· ${esc(c.slug)}</span>
+              <span class="px-1.5 py-0.5 border border-border dark:border-border-dark">${STATUS_LABEL[c.status] || esc(c.status)}</span>
+            </span>
+            <span class="text-muted dark:text-muted-dark">${esc(when(c.createdAt))}</span>
+          </div>
+          <p class="text-sm whitespace-pre-line break-words">${esc(c.body)}</p>
+          <div class="flex gap-4 text-sm pt-1">
+            ${c.status !== 'approved' ? `<button data-act="approved" data-id="${c.id}" class="text-green-700 dark:text-green-400 hover:underline underline-offset-4 cursor-pointer">通过</button>` : ''}
+            ${c.status !== 'hidden' ? `<button data-act="hidden" data-id="${c.id}" class="text-muted dark:text-muted-dark hover:underline underline-offset-4 cursor-pointer">隐藏</button>` : ''}
+            <button data-act="delete" data-id="${c.id}" class="text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer">删除</button>
+          </div>`;
+        list.appendChild(li);
+      }
+      list.querySelectorAll('[data-act]').forEach((btn) => {
+        btn.onclick = () =>
+          btn.dataset.act === 'delete'
+            ? removeComment(btn.dataset.id)
+            : moderate(btn.dataset.id, btn.dataset.act);
+      });
+    }
+
+    async function moderate(id, status) {
+      try {
+        await api(`/api/comments/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+        await loadComments();
+      } catch (err) {
+        $('comment-status').textContent = '操作失败：' + err.message;
+      }
+    }
+
+    async function removeComment(id) {
+      if (!confirm('确定删除这条评论？删除后不可恢复。')) return;
+      try {
+        await api(`/api/comments/${id}`, { method: 'DELETE' });
+        await loadComments();
+      } catch (err) {
+        $('comment-status').textContent = '操作失败：' + err.message;
+      }
     }
 
     /* ---------- 游戏管理 ---------- */
@@ -590,6 +687,15 @@ export const prerender = true;
       show('game');
       try { await loadGames(); } catch { /* 401 已由 api() 处理 */ }
     };
+    $('btn-comments').onclick = async () => {
+      show('comments');
+      try { await loadComments(); } catch { /* 401 已由 api() 处理 */ }
+    };
+    $('btn-back-from-comments').onclick = () => show('admin');
+    $('btn-comments-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
+    document.querySelectorAll('#comment-filters [data-filter]').forEach((b) => {
+      b.onclick = () => setCommentFilter(b.dataset.filter);
+    });
     $('btn-back-posts').onclick = () => show('admin');
     $('btn-new-game').onclick = () => openGameEditor(null);
     $('btn-game-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };

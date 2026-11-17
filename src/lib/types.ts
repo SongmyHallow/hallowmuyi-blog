@@ -42,6 +42,21 @@ export interface GameTimeline {
   url?: string;
 }
 
+export type CommentStatus = 'pending' | 'approved' | 'hidden';
+
+export interface Comment {
+  id: number;
+  /** 文章 slug */
+  slug: string;
+  nickname: string;
+  email: string;
+  /** 纯文本，展示时需要转义 */
+  body: string;
+  status: CommentStatus;
+  /** ISO 时间（UTC） */
+  createdAt: string;
+}
+
 export interface Game {
   slug: string;
   title: string;

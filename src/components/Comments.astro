@@ -1,0 +1,156 @@
+---
+// 自建评论：访客不用登录，填昵称即可；提交后进入待审核，通过才展示。
+import { listApprovedComments } from '../lib/db';
+import type { Comment } from '../lib/types';
+import { formatDateTime } from '../utils/postMeta';
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+let comments: Comment[] = [];
+try {
+  comments = await listApprovedComments(slug);
+} catch {
+  comments = [];
+}
+
+const fieldClass =
+  'mt-1 w-full border-2 border-border bg-panel px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted/70 focus:border-accent dark:border-border-dark dark:bg-panel-dark dark:placeholder:text-muted-dark/70 dark:focus:border-accent-dark';
+---
+
+<section
+  id="comments"
+  class="mt-16 border-t-2 border-dashed border-shadow pt-10 dark:border-border-dark"
+  data-slug={slug}
+>
+  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <h2 class="font-pixel text-xl">留言板</h2>
+    <span class="font-pixel text-xs text-muted dark:text-muted-dark">{comments.length} 条留言</span>
+  </div>
+  <p class="mt-2 text-sm text-muted dark:text-muted-dark">
+    不用登录，填个昵称就能留言。为了防垃圾评论，新留言会先经过审核再显示。
+  </p>
+
+  <ul class="mt-8 space-y-5">
+    {comments.map((comment) => (
+      <li class="px-card p-5" data-comment>
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <span class="font-pixel text-sm">{comment.nickname}</span>
+          <time class="font-pixel text-xs text-muted dark:text-muted-dark" datetime={comment.createdAt}>
+            {formatDateTime(comment.createdAt)}
+          </time>
+        </div>
+        <p class="mt-3 whitespace-pre-line text-[15px] leading-relaxed">{comment.body}</p>
+      </li>
+    ))}
+  </ul>
+
+  {comments.length === 0 && (
+    <p class="mt-8 text-sm text-muted dark:text-muted-dark">还没有留言，来坐第一排。</p>
+  )}
+
+  <form id="comment-form" class="mt-10 space-y-4" novalidate>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <label class="block text-sm">
+        <span class="font-pixel text-xs text-muted dark:text-muted-dark">昵称 *</span>
+        <input
+          id="c-nickname"
+          name="nickname"
+          type="text"
+          maxlength="20"
+          required
+          autocomplete="nickname"
+          placeholder="怎么称呼你"
+          class={fieldClass}
+        />
+      </label>
+      <label class="block text-sm">
+        <span class="font-pixel text-xs text-muted dark:text-muted-dark">邮箱（可选，只有站长看得到）</span>
+        <input
+          id="c-email"
+          name="email"
+          type="email"
+          maxlength="120"
+          autocomplete="email"
+          placeholder="name@example.com"
+          class={fieldClass}
+        />
+      </label>
+    </div>
+    <label class="block text-sm">
+      <span class="font-pixel text-xs text-muted dark:text-muted-dark">留言 *</span>
+      <textarea
+        id="c-body"
+        name="body"
+        rows="5"
+        maxlength="1000"
+        required
+        placeholder="说点什么…"
+        class={fieldClass}></textarea>
+    </label>
+    <!-- 蜜罐字段：正常访客看不到，机器人会填 -->
+    <input
+      id="c-website"
+      name="website"
+      type="text"
+      tabindex="-1"
+      autocomplete="off"
+      class="hidden"
+      aria-hidden="true"
+    />
+    <div class="flex flex-wrap items-center gap-4">
+      <button type="submit" id="c-submit" class="px-btn">提交留言</button>
+      <span
+        id="c-status"
+        class="text-sm text-muted dark:text-muted-dark"
+        role="status"
+        aria-live="polite"
+      ></span>
+    </div>
+  </form>
+</section>
+
+<script>
+  const section = document.getElementById('comments');
+  const form = document.getElementById('comment-form') as HTMLFormElement | null;
+  const status = document.getElementById('c-status');
+  const submit = document.getElementById('c-submit') as HTMLButtonElement | null;
+  const slug = section?.dataset.slug ?? '';
+
+  if (form && status && submit && slug) {
+    const field = (id: string) => document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const nickname = field('c-nickname')?.value.trim() ?? '';
+      const email = field('c-email')?.value.trim() ?? '';
+      const body = field('c-body')?.value ?? '';
+      const website = field('c-website')?.value ?? '';
+
+      if (!nickname || !body.trim()) {
+        status.textContent = '昵称和留言内容都要填。';
+        return;
+      }
+
+      submit.disabled = true;
+      status.textContent = '提交中…';
+      try {
+        const response = await fetch('/api/comments', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ slug, nickname, email, body, website }),
+        });
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) throw new Error(data.error || `提交失败（${response.status}）`);
+        form.reset();
+        status.textContent = '提交成功，审核通过后会出现在这里。';
+      } catch (error) {
+        status.textContent = `提交失败：${(error as Error).message}`;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+</script>

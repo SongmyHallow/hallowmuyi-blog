@@ -45,3 +45,19 @@ CREATE TABLE IF NOT EXISTS pages (
   body       TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- 自建评论：访客无需登录，昵称 + 可选邮箱；先审后发。
+CREATE TABLE IF NOT EXISTS comments (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug       TEXT NOT NULL,                 -- 对应 posts.slug
+  nickname   TEXT NOT NULL,
+  email      TEXT NOT NULL DEFAULT '',      -- 仅站长可见，不公开显示
+  body       TEXT NOT NULL,                 -- 纯文本
+  status     TEXT NOT NULL DEFAULT 'pending', -- pending | approved | hidden
+  ip_hash    TEXT NOT NULL DEFAULT '',      -- 提交者 IP 的哈希，仅用于限流
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_slug_status ON comments (slug, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_status ON comments (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_ip ON comments (ip_hash, created_at);

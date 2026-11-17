@@ -28,3 +28,14 @@ export function monthDay(value: string): string {
 export function yearOf(value: string): number {
   return Number(value.slice(0, 4));
 }
+
+/** ISO 时间转北京时间 `YYYY-MM-DD HH:mm`，用于评论时间 */
+export function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const shifted = new Date(date.getTime() + 8 * 3600 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())} ${pad(
+    shifted.getUTCHours()
+  )}:${pad(shifted.getUTCMinutes())}`;
+}
