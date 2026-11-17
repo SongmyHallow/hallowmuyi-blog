@@ -15,6 +15,7 @@
     "db:local:seed": "node scripts/build-seed.mjs && wrangler d1 execute hallowmuyi --local --file=db/seed.sql",
     "db:remote:init": "wrangler d1 execute hallowmuyi --remote --file=db/schema.sql",
     "db:remote:seed": "node scripts/build-seed.mjs && wrangler d1 execute hallowmuyi --remote --file=db/seed.sql",
+    "content": "node scripts/content.mjs",
     "deploy": "astro build && node scripts/deploy.mjs"
   },
   "dependencies": {

@@ -23,6 +23,8 @@ interface D1Database {
 interface Env {
   DB: D1Database;
   ADMIN_PASSWORD: string;
+  /** 可选：给脚本/agent 用的 Bearer token，设置后可用 Authorization: Bearer <token> 访问管理接口。 */
+  API_TOKEN?: string;
 }
 
 declare module 'cloudflare:workers' {

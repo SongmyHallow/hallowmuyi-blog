@@ -10,6 +10,9 @@ Astro 7 SSR blog deployed on **Cloudflare Workers + D1** (not Cloudflare Pages).
   `db/seed.sql`. Do not expect edits there to show up on the site.
 - Input validation for posts/games lives in `src/lib/validate.ts`; keep its error
   messages, the admin UI surfaces them verbatim.
+- Content automation goes through `scripts/content.mjs` (`npm run content -- ...`), which
+  talks to the admin API with `Authorization: Bearer $BLOG_API_TOKEN` (server side:
+  `API_TOKEN` secret). Prefer it over raw SQL or hand-written curl.
 
 ## Development
 

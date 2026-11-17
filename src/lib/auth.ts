@@ -62,6 +62,22 @@ export function clearSessionCookie(): string {
 }
 
 export async function isAuthed(request: Request): Promise<boolean> {
+  if (isTokenAuthed(request)) return true;
+  return isCookieAuthed(request);
+}
+
+/** 给脚本 / agent 用的无状态认证：Authorization: Bearer <API_TOKEN>。 */
+function isTokenAuthed(request: Request): boolean {
+  const expected = env.API_TOKEN?.trim();
+  // 太短的 token 不当真，避免配漏时把空值当成通过
+  if (!expected || expected.length < 16) return false;
+  const header = request.headers.get('Authorization') ?? '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match) return false;
+  return timingSafeEqual(match[1].trim(), expected);
+}
+
+async function isCookieAuthed(request: Request): Promise<boolean> {
   const secret = getSecret();
   if (!secret) return false;
   const header = request.headers.get('Cookie') ?? '';

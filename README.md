@@ -149,6 +149,7 @@ npx wrangler login
 npx wrangler d1 create hallowmuyi     # 把返回的 database_id 填进 wrangler.jsonc
 npm run db:remote:init
 npx wrangler secret put ADMIN_PASSWORD
+npx wrangler secret put API_TOKEN     # 可选，给脚本 / agent 用
 npm run db:remote:seed                # 可选：导入仓库里的旧内容
 npm run deploy
 ```
@@ -161,9 +162,18 @@ npm run deploy
 
 > 如果域名刚从别的项目挪过来，本地可能因为 DNS 负缓存暂时解析不到（`ENOTFOUND`），公网是正常的。可以用 `nslookup hallowmuyi.space 1.1.1.1` 确认，或等最多半小时。
 
+## 环境变量
+
+| 变量 | 用途 | 本地 | 线上 |
+| --- | --- | --- | --- |
+| `ADMIN_PASSWORD` | 后台登录密码，同时作为会话 cookie 的签名密钥 | `.dev.vars` | `wrangler secret put ADMIN_PASSWORD` |
+| `API_TOKEN` | 可选，给脚本 / agent 的 Bearer token（少于 16 位会被忽略） | `.dev.vars` | `wrangler secret put API_TOKEN` |
+
+两者都是 secret，不要提交到仓库。轮换方式相同：重新 `secret put` 一个值，旧值立即失效。
+
 ## 接口
 
-都在 `src/pages/api/`，除登录 / 会话外都需要管理员 cookie（`hm_admin`，HMAC 签名，7 天有效）。
+都在 `src/pages/api/`，除登录 / 会话外都需要管理员身份：浏览器用 cookie（`hm_admin`，HMAC 签名，7 天有效），脚本 / agent 用 `Authorization: Bearer <API_TOKEN>`。
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -177,6 +187,38 @@ npm run deploy
 | `GET` / `PUT` | `/api/about` | 关于页读取 / 更新 |
 
 另有 `/rss.xml`、`/sitemap.xml`、`/search-index.json` 三个运行时生成的资源。
+
+### 给脚本和 agent 用的 CLI
+
+管理接口除了浏览器 cookie，还接受 `Authorization: Bearer <API_TOKEN>`，所以脚本不需要处理登录和 cookie。仓库里带了一个薄封装：
+
+```bash
+export BLOG_API_TOKEN=...          # 与服务端 API_TOKEN 一致
+export BLOG_BASE_URL=http://localhost:4321   # 本地开发时；线上可省略
+
+npm run content -- games list
+npm run content -- games get hades --json
+npm run content -- games upsert --file hades.json    # 不存在则创建，存在则合并更新
+npm run content -- games update hades --file patch.json   # 只写要改的字段
+npm run content -- posts create --file post.json
+npm run content -- about update --file about.md
+npm run content -- export --out content.json          # 全量导出，改坏之前先备份
+```
+
+约定：
+
+- `--file` 是 JSON，**顶层必须带 `slug`**，其余字段和接口一致；`update` / `upsert` 会先读当前记录再合并，嵌套数组整体替换
+- 默认输出人类可读的摘要，`--json` 输出原始响应，适合程序解析
+- 成功退出码 `0`，参数错误 `2`，接口报错 `1`，错误信息直接来自服务端校验（中文）
+
+token 在服务端配置：
+
+```bash
+npx wrangler secret put API_TOKEN        # 线上
+# 本地写进 .dev.vars：API_TOKEN=...
+```
+
+token 等于管理员权限，泄露后轮换即可：重新 `secret put` 一个值，旧值立即失效。
 
 ## 数据存在哪
 

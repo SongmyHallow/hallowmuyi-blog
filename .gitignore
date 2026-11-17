@@ -31,3 +31,7 @@ db/seed.sql
 
 # Trae IDE 工作区（AI 生成的 spec，设计结论已在 docs/ 中）
 .trae/
+
+# 本机 lark/feishu 工具产生的授权产物，禁止提交
+.lark-device.json
+lark-auth-qr*.png
