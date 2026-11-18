@@ -5,15 +5,26 @@
 // `routes`，所以 `wrangler deploy` 直接跑会丢掉自定义域。这里在构建产物上
 // 补回 routes（以及 workers_dev，保留 xxx.workers.dev 便于调试）。
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const CONFIG_PATH = fileURLToPath(new URL('../dist/server/wrangler.json', import.meta.url));
+const HEADERS_PATH = fileURLToPath(new URL('../dist/client/_headers', import.meta.url));
 
 const ROUTES = [
   { pattern: 'hallowmuyi.space', custom_domain: true },
   { pattern: 'www.hallowmuyi.space', custom_domain: true },
 ];
+
+// 字体文件内容不会变（文件名带内容标识除外），让浏览器长期缓存，避免每次
+// 页面加载都重新验证 100KB+
+if (existsSync(HEADERS_PATH)) {
+  const headers = readFileSync(HEADERS_PATH, 'utf8');
+  if (!headers.includes('/fonts/*')) {
+    const extra = '/fonts/*\n  Cache-Control: public, max-age=31536000, immutable\n';
+    writeFileSync(HEADERS_PATH, `${headers.trimEnd()}\n\n${extra}`);
+  }
+}
 
 const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
 config.routes = ROUTES;

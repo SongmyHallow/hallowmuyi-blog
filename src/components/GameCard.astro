@@ -18,8 +18,11 @@ const version = latestVersion(game);
     <img
       src={game.cover}
       alt={`${game.title} 封面`}
+      width="600"
+      height="800"
       loading="lazy"
       decoding="async"
+      fetchpriority="low"
       class="h-full w-full object-cover"
       onerror="this.style.display='none'"
     />

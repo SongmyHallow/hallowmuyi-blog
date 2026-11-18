@@ -65,6 +65,14 @@ Deploy with `npm run deploy` (= `astro build && node scripts/deploy.mjs`). Never
 - Link prefetching is enabled globally in `astro.config.mjs`
   (`prefetch: { prefetchAll: true, defaultStrategy: 'hover' }`), so nav between pages is
   instant once the target HTML is in the browser cache.
+- Pixel font is shipped as two woff2 subsets in `public/fonts/` (`-core` for ASCII +
+  punctuation + GB2312 level 1, `-ext` for rare glyphs) selected by `unicode-range` in
+  `src/styles/global.css`. Regenerate with
+  `python scripts/build_fonts.py scripts/fonts/fusion-pixel-12px-src.woff2 public/fonts`
+  (needs `fonttools` + `brotli`); paste `scripts/fonts/font-face.css` back into
+  `global.css` if the ranges change. Never hand-edit the ranges.
+- `scripts/deploy.mjs` appends `/fonts/* → Cache-Control: immutable` to
+  `dist/client/_headers` before deploying, so fonts are cached for a year.
 
 ## Documentation
 

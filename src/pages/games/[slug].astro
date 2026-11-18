@@ -48,7 +48,10 @@ const sectionTitle =
         <img
           src={game.cover}
           alt={`${game.title} 封面`}
+          width="600"
+          height="800"
           decoding="async"
+          fetchpriority="high"
           class="block aspect-[3/4] w-full object-cover"
         />
       </div>
