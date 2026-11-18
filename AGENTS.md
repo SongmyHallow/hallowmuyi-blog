@@ -56,6 +56,15 @@ Deploy with `npm run deploy` (= `astro build && node scripts/deploy.mjs`). Never
   `hallowmuyi` database.
 - Image processing is disabled (`imageService: 'passthrough'`) so no Images binding is
   required. Remote cover URLs are rendered directly.
+- HTML caching lives in `src/middleware.ts`: GET + `Accept: text/html` responses are stored
+  in the Workers Cache API for 60s and served with `x-cache: HIT`. Requests carrying the
+  `hm_admin` cookie bypass the cache (`private, no-store`) so authors always see fresh
+  content. Keep the client-facing `Cache-Control` `private` — Cloudflare's zone-level
+  Browser Cache TTL rewrites a public `max-age` to 4 hours, which makes visitors see stale
+  pages. `/api/`, `/admin`, `/_astro/`, `/fonts/` are never cached here.
+- Link prefetching is enabled globally in `astro.config.mjs`
+  (`prefetch: { prefetchAll: true, defaultStrategy: 'hover' }`), so nav between pages is
+  instant once the target HTML is in the browser cache.
 
 ## Documentation
 

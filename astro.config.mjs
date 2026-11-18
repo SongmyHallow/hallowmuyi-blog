@@ -17,6 +17,12 @@ export default defineConfig({
   }),
   // 不使用 Astro 的 session（无需额外 KV 绑定）。
   session: false,
+  // 鼠标悬停/键盘聚焦时预取内部链接，点击时页面已经在浏览器缓存里。
+  // 与 middleware 的边缘缓存配合，导航体感接近静态站。
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'hover',
+  },
   vite: {
     plugins: [tailwindcss()],
   },
