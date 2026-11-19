@@ -11,6 +11,12 @@ if (!page) {
 }
 
 const html = renderMarkdown(page.body);
+
+const links = [
+  { label: 'GitHub', href: 'https://github.com/SongmyHallow' },
+  { label: '哔哩哔哩', href: 'https://space.bilibili.com/5955423?spm_id_from=333.1007.0.0' },
+  { label: '小红书', href: 'https://xhslink.cn/o/7enxAxGqzLa' },
+];
 ---
 
 <Base title="关于">
@@ -34,16 +40,16 @@ const html = renderMarkdown(page.body);
         <nav class="px-card p-4" aria-label="站外链接">
           <h2 class="mb-3 font-pixel text-xs text-muted dark:text-muted-dark">LINKS</h2>
           <ul class="space-y-2 text-sm">
-            <li><a class="transition-colors hover:text-accent dark:hover:text-accent-dark" href="/rss.xml">▸ RSS 订阅</a></li>
-            <li><a class="transition-colors hover:text-accent dark:hover:text-accent-dark" href="/sitemap.xml">▸ 站点地图</a></li>
-            <li>
-              <a
-                class="transition-colors hover:text-accent dark:hover:text-accent-dark"
-                href="https://github.com/SongmyHallow/hallowmuyi-blog"
-                rel="me noopener"
-                target="_blank"
-              >▸ GitHub ↗</a>
-            </li>
+            {links.map((link) => (
+              <li>
+                <a
+                  class="transition-colors hover:text-accent dark:hover:text-accent-dark"
+                  href={link.href}
+                  rel="me noopener"
+                  target="_blank"
+                >▸ {link.label} ↗</a>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
