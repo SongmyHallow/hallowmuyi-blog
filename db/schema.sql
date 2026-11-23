@@ -61,3 +61,10 @@ CREATE TABLE IF NOT EXISTS comments (
 CREATE INDEX IF NOT EXISTS idx_comments_slug_status ON comments (slug, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_comments_status ON comments (status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_comments_ip ON comments (ip_hash, created_at);
+
+-- 站点级配置：目前保存书架顺序与首页「近期游戏」精选（key = game_layout）。
+CREATE TABLE IF NOT EXISTS site_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,                 -- JSON
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);

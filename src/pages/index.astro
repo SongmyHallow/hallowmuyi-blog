@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import { listGames, listPosts } from '../lib/db';
-import { sortGames } from '../utils/gameMeta';
+import { getGameLayout, listGames, listPosts } from '../lib/db';
+import { selectRecentGames } from '../utils/gameMeta';
 import { formatDate, postMeta } from '../utils/postMeta';
 
 const posts = await listPosts();
@@ -15,9 +15,10 @@ const tags = [...tagCounts.entries()].sort(
   (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN')
 );
 
-// 近期游戏：书架里的非草稿游戏，按最近更新排前四个
+// 近期游戏：优先使用后台精选；没有精选时回退到最近更新前四个
 const allGames = (await listGames()).filter((game) => !game.draft);
-const recentGames = sortGames(allGames, 'updated').slice(0, 4);
+const { layout } = await getGameLayout();
+const recentGames = selectRecentGames(allGames, layout.featured, 4);
 ---
 
 <Base title="首页">

@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import type { Comment, CommentStatus, Game, Page, Post } from './types';
+import type { Comment, CommentStatus, Game, GameLayout, Page, Post } from './types';
 
 /**
  * 所有内容读写都走 Cloudflare D1。页面在请求时读库，后台保存后立即生效，
@@ -378,6 +378,62 @@ export async function deleteGame(slug: string, expectedVersion?: string | null):
   }
   const result = await db().prepare('DELETE FROM games WHERE slug = ?1').bind(slug).run();
   return (result.meta?.changes ?? 0) > 0 ? 'ok' : 'missing';
+}
+
+/* --------------------------- 书架布局 / 站点配置 --------------------------- */
+
+export interface GameLayoutRecord {
+  layout: GameLayout;
+  version: string;
+}
+
+const GAME_LAYOUT_KEY = 'game_layout';
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const s = item.trim();
+    if (s && !out.includes(s)) out.push(s);
+  }
+  return out;
+}
+
+function parseGameLayout(value: string | null | undefined): GameLayout {
+  const raw = parseJson<Record<string, unknown>>(value, {});
+  return {
+    shelf: stringArray(raw.shelf),
+    featured: stringArray(raw.featured),
+  };
+}
+
+/** 读取书架顺序与首页精选；没有配置时返回空布局，由页面回退到默认排序。 */
+export async function getGameLayout(): Promise<GameLayoutRecord> {
+  const row = await db()
+    .prepare('SELECT value, updated_at FROM site_settings WHERE key = ?1')
+    .bind(GAME_LAYOUT_KEY)
+    .first<{ value: string; updated_at: string | null }>();
+  return {
+    layout: parseGameLayout(row?.value),
+    version: row?.updated_at ?? '',
+  };
+}
+
+/** 写入书架布局，返回新的版本号。 */
+export async function saveGameLayout(layout: GameLayout): Promise<string> {
+  const row = await db()
+    .prepare(
+      `INSERT INTO site_settings (key, value, updated_at)
+       VALUES (?1, ?2, ${VERSION_SQL})
+       ON CONFLICT(key) DO UPDATE SET
+         value = excluded.value,
+         updated_at = excluded.updated_at
+       RETURNING updated_at`
+    )
+    .bind(GAME_LAYOUT_KEY, JSON.stringify(layout))
+    .first<{ updated_at: string }>();
+  return row?.updated_at ?? '';
 }
 
 /* ------------------------------- 单页 ------------------------------- */

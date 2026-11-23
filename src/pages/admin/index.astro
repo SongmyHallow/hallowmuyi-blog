@@ -103,6 +103,23 @@ export const prerender = true;
       </div>
       <p class="text-xs text-muted dark:text-muted-dark mb-6">保存/删除后立即生效，无需重新部署。</p>
 
+      <section class="mb-10 border-2 border-border p-4 dark:border-border-dark" aria-labelledby="game-layout-title">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <h2 id="game-layout-title" class="text-lg font-semibold">书架顺序 / 首页近期游戏</h2>
+            <p class="mt-1 text-xs leading-relaxed text-muted dark:text-muted-dark">
+              拖动条目或使用 ↑ ↓ 调整书架默认顺序；勾选「首页」决定首页「近期游戏」，最多 4 个，不勾选时自动取最近更新的 4 个。新游戏会排在末尾。
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-3">
+            <span id="layout-featured-count" class="text-xs text-muted dark:text-muted-dark">首页 0 / 4</span>
+            <button type="button" id="btn-save-layout" class="px-btn" disabled>保存排序</button>
+          </div>
+        </div>
+        <p id="layout-status" class="mt-3 text-sm text-muted dark:text-muted-dark" aria-live="polite"></p>
+        <ol id="game-layout-list" class="mt-4 list-none space-y-2"></ol>
+      </section>
+
       <ul id="game-list" class="space-y-3 mb-12"></ul>
 
       <!-- 游戏编辑器 -->
@@ -265,8 +282,8 @@ export const prerender = true;
 
     async function api(path, opts = {}) {
       const res = await fetch(path, {
-        headers: { 'Content-Type': 'application/json' },
         ...opts,
+        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
       });
       if (res.status === 401 && path !== '/api/login') { show('login'); throw new Error('unauthorized'); }
       const data = await res.json();
@@ -418,6 +435,11 @@ export const prerender = true;
     const inputBase = 'px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark';
     const delBtnCls = 'text-sm text-red-600 dark:text-red-400 hover:underline underline-offset-4 cursor-pointer shrink-0';
     let gameSlug = null; // null = 新建
+    let layoutGames = []; // 当前书架顺序（含草稿）
+    let layoutFeatured = new Set(); // 首页精选 slug
+    let layoutVersion = ''; // 乐观锁版本（site_settings.updated_at）
+    let layoutDirty = false;
+    let dragSlug = null;
 
     function dateInput(v) {
       return v ? String(v).slice(0, 10) : '';
@@ -427,12 +449,187 @@ export const prerender = true;
       return v.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
     }
 
+    function updateLayoutMeta() {
+      const count = $('layout-featured-count');
+      if (count) count.textContent = `首页 ${layoutFeatured.size} / 4`;
+      const save = $('btn-save-layout');
+      if (save) save.disabled = !layoutDirty;
+    }
+
+    function markLayoutDirty(message) {
+      layoutDirty = true;
+      updateLayoutMeta();
+      if (message) $('layout-status').textContent = message;
+    }
+
+    function applyServerLayout(games, data) {
+      const bySlug = new Map(games.map((g) => [g.slug, g]));
+      const ordered = [];
+      for (const slug of data.layout?.shelf || []) {
+        const game = bySlug.get(slug);
+        if (!game) continue;
+        ordered.push(game);
+        bySlug.delete(slug);
+      }
+      for (const game of games) {
+        if (bySlug.has(game.slug)) ordered.push(game);
+      }
+      layoutGames = ordered;
+
+      const all = new Map(games.map((g) => [g.slug, g]));
+      layoutFeatured = new Set(
+        (data.layout?.featured || [])
+          .filter((slug) => {
+            const game = all.get(slug);
+            return game && !game.draft;
+          })
+          .slice(0, 4)
+      );
+      layoutVersion = data.version || '';
+      layoutDirty = false;
+      $('layout-status').textContent = '';
+      renderGameLayout();
+    }
+
+    function renderGameLayout() {
+      const ol = $('game-layout-list');
+      if (!ol) return;
+      ol.innerHTML = '';
+      if (!layoutGames.length) {
+        ol.innerHTML = '<li class="text-sm text-muted dark:text-muted-dark">还没有游戏，先添加一个。</li>';
+        updateLayoutMeta();
+        return;
+      }
+      layoutGames.forEach((g, index) => {
+        const li = document.createElement('li');
+        li.draggable = true;
+        li.dataset.slug = g.slug;
+        li.className = 'flex flex-wrap items-center gap-2 border-2 border-border p-2 dark:border-border-dark';
+        const cover = g.cover
+          ? `<img src="${esc(g.cover)}" alt="" class="h-9 w-7 shrink-0 border border-border object-cover dark:border-border-dark" />`
+          : '';
+        li.innerHTML = `
+          <span class="cursor-grab select-none text-muted dark:text-muted-dark" aria-hidden="true">⋮⋮</span>
+          <span class="w-7 text-right font-mono text-xs text-muted dark:text-muted-dark">${String(index + 1).padStart(2, '0')}</span>
+          ${cover}
+          <div class="min-w-0 flex-1">
+            <span class="block truncate text-sm">${esc(g.title || g.slug)}</span>
+            <span class="block truncate font-mono text-[11px] text-muted dark:text-muted-dark">${esc(g.slug)}${g.draft ? ' · 草稿' : ''}</span>
+          </div>
+          <label class="flex items-center gap-1.5 text-xs text-muted dark:text-muted-dark">
+            <input type="checkbox" data-layout-featured ${layoutFeatured.has(g.slug) ? 'checked' : ''} ${g.draft ? 'disabled' : ''} />
+            首页
+          </label>
+          <button type="button" data-layout-move="up" class="px-1.5 py-0.5 text-sm disabled:opacity-30" aria-label="上移" ${index === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" data-layout-move="down" class="px-1.5 py-0.5 text-sm disabled:opacity-30" aria-label="下移" ${index === layoutGames.length - 1 ? 'disabled' : ''}>↓</button>`;
+
+        const img = li.querySelector('img');
+        if (img) img.onerror = () => img.classList.add('hidden');
+
+        const featured = li.querySelector('[data-layout-featured]');
+        featured.onchange = () => {
+          if (featured.checked) {
+            if (layoutFeatured.size >= 4) {
+              featured.checked = false;
+              $('layout-status').textContent = '首页最多选择 4 个游戏';
+              return;
+            }
+            layoutFeatured.add(g.slug);
+          } else {
+            layoutFeatured.delete(g.slug);
+          }
+          markLayoutDirty('有未保存的修改，记得点击「保存排序」。');
+        };
+
+        li.querySelectorAll('[data-layout-move]').forEach((btn) => {
+          btn.onclick = () => moveLayout(g.slug, btn.dataset.layoutMove === 'up' ? -1 : 1);
+        });
+
+        li.addEventListener('dragstart', (event) => {
+          dragSlug = g.slug;
+          li.classList.add('opacity-50');
+          try { event.dataTransfer.setData('text/plain', g.slug); } catch { /* ignore */ }
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+        });
+        li.addEventListener('dragend', () => {
+          dragSlug = null;
+          li.classList.remove('opacity-50');
+          ol.querySelectorAll('.drag-over').forEach((row) => row.classList.remove('drag-over', 'border-accent', 'dark:border-accent-dark'));
+        });
+        li.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          if (dragSlug && dragSlug !== g.slug) li.classList.add('drag-over', 'border-accent', 'dark:border-accent-dark');
+        });
+        li.addEventListener('dragleave', () => li.classList.remove('drag-over', 'border-accent', 'dark:border-accent-dark'));
+        li.addEventListener('drop', (event) => {
+          event.preventDefault();
+          li.classList.remove('drag-over', 'border-accent', 'dark:border-accent-dark');
+          if (dragSlug && dragSlug !== g.slug) moveLayoutTo(dragSlug, g.slug);
+        });
+
+        ol.appendChild(li);
+      });
+      updateLayoutMeta();
+    }
+
+    function moveLayout(slug, delta) {
+      const from = layoutGames.findIndex((g) => g.slug === slug);
+      const to = from + delta;
+      if (from < 0 || to < 0 || to >= layoutGames.length) return;
+      const [item] = layoutGames.splice(from, 1);
+      layoutGames.splice(to, 0, item);
+      renderGameLayout();
+      markLayoutDirty('有未保存的修改，记得点击「保存排序」。');
+    }
+
+    function moveLayoutTo(slug, targetSlug) {
+      const from = layoutGames.findIndex((g) => g.slug === slug);
+      let to = layoutGames.findIndex((g) => g.slug === targetSlug);
+      if (from < 0 || to < 0 || from === to) return;
+      const [item] = layoutGames.splice(from, 1);
+      if (from < to) to -= 1;
+      layoutGames.splice(to, 0, item);
+      renderGameLayout();
+      markLayoutDirty('有未保存的修改，记得点击「保存排序」。');
+    }
+
+    async function saveLayout() {
+      const btn = $('btn-save-layout');
+      const status = $('layout-status');
+      const shelf = layoutGames.map((g) => g.slug);
+      const featured = layoutGames
+        .filter((g) => !g.draft && layoutFeatured.has(g.slug))
+        .map((g) => g.slug);
+      btn.disabled = true;
+      status.textContent = '保存中…';
+      try {
+        const headers = layoutVersion ? { 'If-Match': layoutVersion } : {};
+        const data = await api('/api/game-layout', {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ shelf, featured }),
+        });
+        layoutVersion = data.version || '';
+        layoutDirty = false;
+        status.textContent = '已保存，立即生效';
+        updateLayoutMeta();
+      } catch (err) {
+        status.textContent = '失败：' + err.message;
+        btn.disabled = !layoutDirty;
+      }
+    }
+
     async function loadGames() {
-      const { games } = await api('/api/games');
+      const [{ games }, layoutData] = await Promise.all([api('/api/games'), api('/api/game-layout')]);
       const ul = $('game-list');
       ul.innerHTML = '';
       if (!games.length) {
         ul.innerHTML = '<li class="text-sm text-muted dark:text-muted-dark">还没有游戏，点击「+ 新游戏」添加。</li>';
+        layoutGames = [];
+        layoutFeatured = new Set();
+        layoutVersion = layoutData.version || '';
+        layoutDirty = false;
+        renderGameLayout();
         return;
       }
       const sorted = games.slice().sort((a, b) => String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
@@ -458,6 +655,31 @@ export const prerender = true;
       }
       ul.querySelectorAll('[data-g-edit]').forEach((b) => (b.onclick = () => openGameEditor(b.dataset.gEdit)));
       ul.querySelectorAll('[data-g-del]').forEach((b) => (b.onclick = () => delGame(b.dataset.gDel)));
+
+      if (layoutDirty && layoutGames.length) {
+        const all = new Map(games.map((g) => [g.slug, g]));
+        const next = [];
+        const seen = new Set();
+        for (const old of layoutGames) {
+          const game = all.get(old.slug);
+          if (!game) continue;
+          next.push(game);
+          seen.add(game.slug);
+        }
+        for (const game of games) {
+          if (!seen.has(game.slug)) next.push(game);
+        }
+        layoutGames = next;
+        layoutFeatured = new Set(
+          [...layoutFeatured].filter((slug) => {
+            const game = all.get(slug);
+            return game && !game.draft;
+          })
+        );
+        renderGameLayout();
+      } else {
+        applyServerLayout(games, layoutData);
+      }
     }
 
     async function delGame(slug) {
@@ -699,6 +921,7 @@ export const prerender = true;
     $('btn-back-posts').onclick = () => show('admin');
     $('btn-new-game').onclick = () => openGameEditor(null);
     $('btn-game-logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.reload(); };
+    $('btn-save-layout').onclick = saveLayout;
     $('btn-add-score').onclick = () => addScoreRow();
     $('btn-add-link').onclick = () => addLinkRow();
     $('btn-add-timeline').onclick = () => addTimelineRow();

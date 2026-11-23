@@ -7,7 +7,7 @@ import { DATE_RE, SLUG_RE } from '../../lib/validate';
  * 公开访问即可，内容不含任何密钥。
  */
 const schema = {
-  version: 1,
+  version: 2,
   auth: {
     browser: 'cookie hm_admin（POST /api/login {password}）',
     script: 'Authorization: Bearer <API_TOKEN>',
@@ -87,6 +87,19 @@ const schema = {
         draft: { type: 'boolean', required: false, default: false },
       },
       response: { item: '{ game, version }', list: '{ games: [{ ...game, version }] }' },
+    },
+    gameLayout: {
+      get: 'GET /api/game-layout',
+      replace: 'PUT /api/game-layout { shelf, featured }',
+      fields: {
+        shelf: { type: 'string[]', required: true, note: '游戏 slug 的书架默认顺序；未列出的游戏排在后面' },
+        featured: {
+          type: 'string[]',
+          required: true,
+          note: '首页「近期游戏」的 slug，最多 4 个，必须来自 shelf 且不能是草稿；为空时首页回退到最近更新前 4 个',
+        },
+      },
+      response: { item: '{ layout: { shelf, featured }, version }' },
     },
     about: {
       get: 'GET /api/about',

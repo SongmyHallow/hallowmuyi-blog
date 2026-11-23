@@ -57,6 +57,14 @@ export interface Comment {
   createdAt: string;
 }
 
+/** 站点级的书架布局：默认顺序 + 首页「近期游戏」精选。 */
+export interface GameLayout {
+  /** 书架默认顺序的 slug 列表；未列出的游戏排在后面。 */
+  shelf: string[];
+  /** 首页「近期游戏」的 slug 列表；为空时回退到最近更新前 4 个。 */
+  featured: string[];
+}
+
 export interface Game {
   slug: string;
   title: string;

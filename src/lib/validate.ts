@@ -1,4 +1,4 @@
-import type { Game, GameLink, GameScore, GameTimeline, Post } from './types';
+import type { Game, GameLayout, GameLink, GameScore, GameTimeline, Post } from './types';
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -174,6 +174,34 @@ export function normalizeGame(slug: string, input: unknown): Game {
     timeline,
     draft: raw.draft === true || raw.draft === 'true',
   };
+}
+
+/**
+ * 书架布局只接受已存在的游戏 slug；首页精选最多 4 个，且必须来自书架顺序。
+ * 草稿可以参与排序，但不会出现在公开书架或首页，因此禁止被精选。
+ */
+export function normalizeGameLayout(
+  input: unknown,
+  games: Array<Pick<Game, 'slug' | 'draft'>>
+): GameLayout {
+  const raw = asRecord(input);
+  const bySlug = new Map(games.map((game) => [game.slug, game]));
+
+  const shelf = uniqStrings(raw.shelf);
+  for (const slug of shelf) {
+    if (!bySlug.has(slug)) fail(`游戏「${slug}」不存在`);
+  }
+
+  const featured = uniqStrings(raw.featured);
+  if (featured.length > 4) fail('首页近期游戏最多选择 4 个');
+  for (const slug of featured) {
+    const game = bySlug.get(slug);
+    if (!game) fail(`游戏「${slug}」不存在`);
+    if (game.draft) fail(`草稿游戏「${slug}」不能出现在首页`);
+    if (!shelf.includes(slug)) fail(`首页游戏「${slug}」不在书架顺序中`);
+  }
+
+  return { shelf, featured };
 }
 
 export function isValidSlug(slug: string): boolean {

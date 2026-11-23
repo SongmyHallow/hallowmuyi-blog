@@ -1,6 +1,6 @@
 import type { Game } from '../lib/types';
 
-export type GameSort = 'updated' | 'added' | 'release';
+export type GameSort = 'shelf' | 'updated' | 'added' | 'release';
 
 function toTime(date: string | undefined): number | undefined {
   if (!date) return undefined;
@@ -49,8 +49,23 @@ function byTitle(a: Game, b: Game): number {
   return a.title.localeCompare(b.title, 'zh-CN');
 }
 
-export function sortGames(games: Game[], sort: GameSort): Game[] {
+export function sortGames(games: Game[], sort: GameSort, shelfOrder: string[] = []): Game[] {
   const sorted = [...games];
+  if (sort === 'shelf') {
+    const rank = new Map(shelfOrder.map((slug, index) => [slug, index]));
+    const listed: Game[] = [];
+    const unlisted: Game[] = [];
+    for (const game of sorted) {
+      if (rank.has(game.slug)) listed.push(game);
+      else unlisted.push(game);
+    }
+    listed.sort((a, b) => (rank.get(a.slug) ?? 0) - (rank.get(b.slug) ?? 0));
+    unlisted.sort((a, b) => {
+      const diff = lastUpdatedAt(b) - lastUpdatedAt(a);
+      return diff !== 0 ? diff : byTitle(a, b);
+    });
+    return [...listed, ...unlisted];
+  }
   if (sort === 'release') {
     return sorted.sort((a, b) => {
       const ta = releaseTime(a);
@@ -66,6 +81,23 @@ export function sortGames(games: Game[], sort: GameSort): Game[] {
     const diff = keyOf(b) - keyOf(a);
     return diff !== 0 ? diff : byTitle(a, b);
   });
+}
+
+/**
+ * 首页「近期游戏」：优先按后台精选顺序取（最多 limit 个）；
+ * 没有有效精选时回退到最近更新前 limit 个。
+ */
+export function selectRecentGames(games: Game[], featured: string[] = [], limit = 4): Game[] {
+  const bySlug = new Map(games.map((game) => [game.slug, game]));
+  const picked: Game[] = [];
+  for (const slug of featured) {
+    const game = bySlug.get(slug);
+    if (!game || game.draft || picked.includes(game)) continue;
+    picked.push(game);
+    if (picked.length >= limit) break;
+  }
+  if (picked.length > 0) return picked;
+  return sortGames(games.filter((game) => !game.draft), 'updated').slice(0, limit);
 }
 
 export function formatGameDate(date: string | undefined): string {

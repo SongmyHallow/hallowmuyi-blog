@@ -1,10 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
 import GameCard from '../../components/GameCard.astro';
-import { listGames } from '../../lib/db';
+import { getGameLayout, listGames } from '../../lib/db';
 import { addedAtTime, lastUpdatedAt, releaseTime, sortGames } from '../../utils/gameMeta';
 
-const games = sortGames(await listGames(), 'updated');
+const { layout } = await getGameLayout();
+const games = sortGames(await listGames(), 'shelf', layout.shelf);
 
 function countFacets(values: string[][]) {
   const counts = new Map<string, number>();
@@ -29,7 +30,8 @@ const genreFacets = countFacets(games.map((game) => game.genres));
 
     {games.length > 0 && (
       <div id="game-sort" class="flex flex-wrap gap-2" role="group" aria-label="排序方式">
-        <button type="button" class="px-btn" data-sort="updated" aria-pressed="true">最近更新</button>
+        <button type="button" class="px-btn" data-sort="shelf" aria-pressed="true">书架顺序</button>
+        <button type="button" class="px-btn" data-sort="updated" aria-pressed="false">最近更新</button>
         <button type="button" class="px-btn" data-sort="added" aria-pressed="false">加入书架</button>
         <button type="button" class="px-btn" data-sort="release" aria-pressed="false">发售时间</button>
       </div>
@@ -106,8 +108,9 @@ const genreFacets = countFacets(games.map((game) => game.genres));
 
       <div class="min-w-0">
         <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-          {games.map((game) => (
+          {games.map((game, index) => (
             <li
+              data-shelf={index}
               data-title={game.title}
               data-updated={lastUpdatedAt(game)}
               data-added={addedAtTime(game)}
@@ -152,8 +155,8 @@ const genreFacets = countFacets(games.map((game) => game.genres));
     var filterPanel = document.getElementById('game-filter-panel');
     var filterToggleLabel = document.getElementById('game-filter-toggle-label');
     var total = cards.length;
-    var currentSort = 'updated';
-    var validSorts = { updated: true, added: true, release: true };
+    var currentSort = 'shelf';
+    var validSorts = { shelf: true, updated: true, added: true, release: true };
 
     function attr(el, name) {
       return el.getAttribute(name) || '';
@@ -195,6 +198,8 @@ const genreFacets = countFacets(games.map((game) => game.genres));
           else if (av === 0) diff = 1;
           else if (bv === 0) diff = -1;
           else diff = bv - av;
+        } else if (key === 'shelf') {
+          diff = (Number(attr(a, 'data-shelf')) || 0) - (Number(attr(b, 'data-shelf')) || 0);
         } else {
           diff = (Number(attr(b, 'data-' + key)) || 0) - (Number(attr(a, 'data-' + key)) || 0);
         }
@@ -269,7 +274,7 @@ const genreFacets = countFacets(games.map((game) => game.genres));
     sortButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var key = btn.getAttribute('data-sort');
-        if (!validSorts[key]) key = 'updated';
+        if (!validSorts[key]) key = 'shelf';
         currentSort = key;
         sortBy(key);
         setPressed(key);
@@ -302,7 +307,7 @@ const genreFacets = countFacets(games.map((game) => game.genres));
 
     var params = new URLSearchParams(location.search);
     var sortParam = params.get('sort');
-    currentSort = validSorts[sortParam] ? sortParam : 'updated';
+    currentSort = validSorts[sortParam] ? sortParam : 'shelf';
 
     function checkValues(name, raw) {
       if (!raw) return;
