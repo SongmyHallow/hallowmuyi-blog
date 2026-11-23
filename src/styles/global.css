@@ -242,6 +242,49 @@ a.px-tag:hover {
   color: var(--color-bg-dark);
 }
 
+/* 首页标签筛选 */
+.tag-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 7px;
+  cursor: pointer;
+  user-select: none;
+}
+.tag-filter input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.tag-filter .tag-count {
+  opacity: 0.55;
+}
+.tag-filter:hover {
+  border-color: var(--color-accent);
+}
+.dark .tag-filter:hover {
+  border-color: var(--color-accent-dark);
+}
+.tag-filter:has(input:checked) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+.dark .tag-filter:has(input:checked) {
+  background: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+  color: var(--color-bg-dark);
+}
+.tag-filter:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.dark .tag-filter:has(input:focus-visible) {
+  outline-color: var(--color-accent-dark);
+}
+
 /* 闪烁光标（PRESS START），尊重系统减弱动效 */
 @keyframes px-blink {
   0%, 49% { opacity: 1; }
