@@ -71,8 +71,9 @@ Deploy with `npm run deploy` (= `astro build && node scripts/deploy.mjs`). Never
   `python scripts/build_fonts.py scripts/fonts/fusion-pixel-12px-src.woff2 public/fonts`
   (needs `fonttools` + `brotli`); paste `scripts/fonts/font-face.css` back into
   `global.css` if the ranges change. Never hand-edit the ranges.
-- Home page (`src/pages/index.astro`) renders the post waterfall server-side and filters it
-  client-side by tag checkboxes (`?tags=a,b` is the source of truth on load). The avatar is
+- Home page (`src/pages/index.astro`) renders the full post list (one full-width row per
+  post) server-side and filters it client-side by tag checkboxes (`?tags=a,b` is the source
+  of truth on load). The avatar is
   an inline pixel SVG placeholder; swap it for `<img src="/avatar.png" …>` if a real photo is
   wanted. "近期游戏" comes from `listGames()` sorted by last-updated, so editing a game in
   admin is what pushes it into that block.
