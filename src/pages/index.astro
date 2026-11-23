@@ -26,32 +26,13 @@ const recentGames = sortGames(allGames, 'updated').slice(0, 4);
     <aside class="min-w-0 space-y-5 lg:sticky lg:top-24">
       <section class="px-card p-5">
         <div class="flex items-center gap-3.5">
-          <svg
-            viewBox="0 0 16 16"
-            shape-rendering="crispEdges"
-            class="h-14 w-14 shrink-0 border-2 border-border dark:border-border-dark"
-            aria-hidden="true"
-          >
-            <!-- 像素头像占位：想换成自己的图，直接改用 <img src="/avatar.png" alt="muyi" /> 即可 -->
-            <rect width="16" height="16" fill="#f2efe6"></rect>
-            <g fill="#2b2622">
-              <rect x="4" y="2" width="8" height="1"></rect>
-              <rect x="3" y="3" width="10" height="1"></rect>
-              <rect x="3" y="4" width="1" height="5"></rect>
-              <rect x="12" y="4" width="1" height="5"></rect>
-              <rect x="5" y="4" width="6" height="1"></rect>
-            </g>
-            <rect x="5" y="5" width="6" height="4" fill="#f3c9a1"></rect>
-            <rect x="7" y="9" width="2" height="1" fill="#f3c9a1"></rect>
-            <g fill="#2b2622">
-              <rect x="6" y="6" width="1" height="1"></rect>
-              <rect x="9" y="6" width="1" height="1"></rect>
-              <rect x="7" y="8" width="2" height="1"></rect>
-            </g>
-            <rect x="4" y="10" width="8" height="1" fill="#c1553b"></rect>
-            <rect x="3" y="11" width="10" height="5" fill="#c1553b"></rect>
-            <rect x="7" y="10" width="2" height="1" fill="#f3c9a1"></rect>
-          </svg>
+          <img
+            src="/avatar.png"
+            alt="muyi 的头像"
+            width="973"
+            height="901"
+            class="h-14 w-14 shrink-0 border-2 border-border bg-[#f2efe6] object-cover dark:border-border-dark"
+          />
           <div class="min-w-0">
             <p class="font-pixel text-lg leading-none">muyi</p>
             <p class="mt-2 text-xs leading-relaxed text-muted dark:text-muted-dark">
