@@ -5,6 +5,19 @@ import { listGames } from '../../lib/db';
 import { addedAtTime, lastUpdatedAt, releaseTime, sortGames } from '../../utils/gameMeta';
 
 const games = sortGames(await listGames(), 'updated');
+
+function countFacets(values: string[][]) {
+  const counts = new Map<string, number>();
+  for (const list of values) {
+    for (const value of list) counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'))
+    .map(([value, count]) => ({ value, count }));
+}
+
+const platformFacets = countFacets(games.map((game) => game.platforms));
+const genreFacets = countFacets(games.map((game) => game.genres));
 ---
 
 <Base title="游戏书架" description="玩过的、在玩的、想玩的游戏都在这里。">
@@ -24,20 +37,96 @@ const games = sortGames(await listGames(), 'updated');
   </header>
 
   {games.length > 0 ? (
-    <>
-      <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-        {games.map((game) => (
-          <li
-            data-title={game.title}
-            data-updated={lastUpdatedAt(game)}
-            data-added={addedAtTime(game)}
-            data-release={releaseTime(game) ?? 0}
-          >
-            <GameCard game={game} />
-          </li>
-        ))}
-      </ul>
-    </>
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-8">
+      <aside class="min-w-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1" aria-label="游戏筛选">
+        <button
+          type="button"
+          id="game-filter-toggle"
+          class="px-btn flex w-full items-center justify-between lg:hidden"
+          aria-expanded="false"
+          aria-controls="game-filter-panel"
+        >
+          <span>筛选条件</span>
+          <span id="game-filter-toggle-label" class="text-[11px] opacity-70">展开 +</span>
+        </button>
+
+        <div id="game-filter-panel" class="mt-3 hidden lg:mt-0 lg:block">
+          <div class="px-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="font-pixel text-sm">筛选</h2>
+              <button
+                type="button"
+                id="game-filter-clear"
+                class="font-pixel text-xs text-link underline decoration-dotted underline-offset-4 disabled:opacity-40 disabled:no-underline dark:text-link-dark"
+                disabled
+              >
+                清除
+              </button>
+            </div>
+            <p id="game-filter-status" class="mt-2 text-sm text-muted dark:text-muted-dark" aria-live="polite">
+              显示全部 {games.length} 款
+            </p>
+
+            <fieldset class="mt-5">
+              <legend class="font-pixel text-xs tracking-wide text-muted dark:text-muted-dark">平台</legend>
+              {platformFacets.length > 0 ? (
+                <div class="mt-3 flex flex-wrap gap-2">
+                  {platformFacets.map((facet) => (
+                    <label class="tag-filter px-tag" data-facet="platform" data-value={facet.value}>
+                      <input type="checkbox" name="platform" value={facet.value} />
+                      <span>{facet.value}</span>
+                      <span class="tag-count">{facet.count}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p class="mt-3 text-sm text-muted dark:text-muted-dark">暂无平台信息</p>
+              )}
+            </fieldset>
+
+            <fieldset class="mt-5">
+              <legend class="font-pixel text-xs tracking-wide text-muted dark:text-muted-dark">类型</legend>
+              {genreFacets.length > 0 ? (
+                <div class="mt-3 flex flex-wrap gap-2">
+                  {genreFacets.map((facet) => (
+                    <label class="tag-filter px-tag" data-facet="genre" data-value={facet.value}>
+                      <input type="checkbox" name="genre" value={facet.value} />
+                      <span>{facet.value}</span>
+                      <span class="tag-count">{facet.count}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p class="mt-3 text-sm text-muted dark:text-muted-dark">暂无类型信息</p>
+              )}
+            </fieldset>
+          </div>
+        </div>
+      </aside>
+
+      <div class="min-w-0">
+        <ul id="game-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          {games.map((game) => (
+            <li
+              data-title={game.title}
+              data-updated={lastUpdatedAt(game)}
+              data-added={addedAtTime(game)}
+              data-release={releaseTime(game) ?? 0}
+              data-platforms={JSON.stringify(game.platforms)}
+              data-genres={JSON.stringify(game.genres)}
+            >
+              <GameCard game={game} />
+            </li>
+          ))}
+        </ul>
+
+        <section id="game-empty" class="px-card p-8 text-center" hidden>
+          <p class="font-pixel text-xl text-accent dark:text-accent-dark">NO MATCH</p>
+          <p class="mt-3 text-muted leading-relaxed dark:text-muted-dark">没有符合当前筛选条件的游戏，试试减少几个条件。</p>
+          <button type="button" id="game-empty-clear" class="px-btn mt-5">清除筛选</button>
+        </section>
+      </div>
+    </div>
   ) : (
     <section class="px-card p-8 text-center">
       <p class="font-pixel text-2xl text-accent dark:text-accent-dark">NO GAMES</p>
@@ -52,53 +141,187 @@ const games = sortGames(await listGames(), 'updated');
     var grid = document.getElementById('game-grid');
     if (!grid) return;
 
-    var buttons = Array.prototype.slice.call(document.querySelectorAll('#game-sort .px-btn'));
-    var valid = { updated: true, added: true, release: true };
-    var title = function (el) { return el.getAttribute('data-title') || ''; };
-    var value = function (el, key) { return Number(el.getAttribute('data-' + key)) || 0; };
+    var cards = Array.prototype.slice.call(grid.children);
+    var sortButtons = Array.prototype.slice.call(document.querySelectorAll('#game-sort .px-btn'));
+    var filterInputs = Array.prototype.slice.call(document.querySelectorAll('#game-filter-panel input[type="checkbox"]'));
+    var clearButton = document.getElementById('game-filter-clear');
+    var emptyClearButton = document.getElementById('game-empty-clear');
+    var status = document.getElementById('game-filter-status');
+    var empty = document.getElementById('game-empty');
+    var filterToggle = document.getElementById('game-filter-toggle');
+    var filterPanel = document.getElementById('game-filter-panel');
+    var filterToggleLabel = document.getElementById('game-filter-toggle-label');
+    var total = cards.length;
+    var currentSort = 'updated';
+    var validSorts = { updated: true, added: true, release: true };
+
+    function attr(el, name) {
+      return el.getAttribute(name) || '';
+    }
+
+    function parseList(el, name) {
+      try {
+        var parsed = JSON.parse(attr(el, 'data-' + name) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    cards.forEach(function (el) {
+      el._platforms = parseList(el, 'platforms');
+      el._genres = parseList(el, 'genres');
+    });
+
+    function selected(name) {
+      return filterInputs
+        .filter(function (input) { return input.name === name && input.checked; })
+        .map(function (input) { return input.value; });
+    }
+
+    function matches(list, selectedValues) {
+      if (selectedValues.length === 0) return true;
+      return selectedValues.some(function (value) { return list.indexOf(value) !== -1; });
+    }
 
     function sortBy(key) {
-      var items = Array.prototype.slice.call(grid.children);
+      var items = cards.slice();
       items.sort(function (a, b) {
         var diff;
         if (key === 'release') {
-          var av = value(a, 'release');
-          var bv = value(b, 'release');
+          var av = Number(attr(a, 'data-release')) || 0;
+          var bv = Number(attr(b, 'data-release')) || 0;
           if (av === 0 && bv === 0) diff = 0;
-          else if (av === 0) diff = 1; // 没有发售日期排最后
+          else if (av === 0) diff = 1;
           else if (bv === 0) diff = -1;
           else diff = bv - av;
         } else {
-          diff = value(b, key) - value(a, key);
+          diff = (Number(attr(b, 'data-' + key)) || 0) - (Number(attr(a, 'data-' + key)) || 0);
         }
         if (diff !== 0) return diff;
-        return title(a).localeCompare(title(b), 'zh-CN');
+        return attr(a, 'data-title').localeCompare(attr(b, 'data-title'), 'zh-CN');
       });
       items.forEach(function (el) {
         grid.appendChild(el);
       });
     }
 
-    function apply(key, updateUrl) {
-      if (!valid[key]) key = 'updated';
-      sortBy(key);
-      buttons.forEach(function (btn) {
+    function setPressed(key) {
+      sortButtons.forEach(function (btn) {
         btn.setAttribute('aria-pressed', btn.getAttribute('data-sort') === key ? 'true' : 'false');
       });
-      if (updateUrl) {
-        var url = new URL(location.href);
-        url.searchParams.set('sort', key);
-        history.replaceState(null, '', url);
-      }
     }
 
-    buttons.forEach(function (btn) {
+    function syncUrl() {
+      var url = new URL(location.href);
+      url.searchParams.set('sort', currentSort);
+      var platforms = selected('platform');
+      var genres = selected('genre');
+      if (platforms.length) url.searchParams.set('platform', platforms.join(','));
+      else url.searchParams.delete('platform');
+      if (genres.length) url.searchParams.set('genre', genres.join(','));
+      else url.searchParams.delete('genre');
+      history.replaceState(null, '', url);
+    }
+
+    function updateCounts(platforms, genres) {
+      filterInputs.forEach(function (input) {
+        var count = 0;
+        var isPlatform = input.name === 'platform';
+        cards.forEach(function (el) {
+          if (isPlatform) {
+            if (!matches(el._genres, genres)) return;
+            if (el._platforms.indexOf(input.value) !== -1) count++;
+          } else {
+            if (!matches(el._platforms, platforms)) return;
+            if (el._genres.indexOf(input.value) !== -1) count++;
+          }
+        });
+        var label = input.closest('.tag-filter');
+        if (label) {
+          var countEl = label.querySelector('.tag-count');
+          if (countEl) countEl.textContent = String(count);
+          label.classList.toggle('is-empty', count === 0);
+        }
+      });
+    }
+
+    function applyFilters(updateUrl) {
+      var platforms = selected('platform');
+      var genres = selected('genre');
+      var visible = 0;
+      cards.forEach(function (el) {
+        var ok = matches(el._platforms, platforms) && matches(el._genres, genres);
+        el.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (status) {
+        status.textContent = visible === total
+          ? '显示全部 ' + total + ' 款'
+          : '显示 ' + visible + ' / ' + total + ' 款';
+      }
+      if (empty) empty.hidden = visible !== 0;
+      if (clearButton) clearButton.disabled = platforms.length === 0 && genres.length === 0;
+      updateCounts(platforms, genres);
+      if (updateUrl) syncUrl();
+    }
+
+    sortButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        apply(btn.getAttribute('data-sort'), true);
+        var key = btn.getAttribute('data-sort');
+        if (!validSorts[key]) key = 'updated';
+        currentSort = key;
+        sortBy(key);
+        setPressed(key);
+        syncUrl();
       });
     });
 
-    var raw = new URLSearchParams(location.search).get('sort');
-    apply(valid[raw] ? raw : 'updated', raw !== null && !valid[raw]);
+    filterInputs.forEach(function (input) {
+      input.addEventListener('change', function () {
+        applyFilters(true);
+      });
+    });
+
+    function clearFilters() {
+      filterInputs.forEach(function (input) { input.checked = false; });
+      applyFilters(true);
+    }
+
+    if (clearButton) clearButton.addEventListener('click', clearFilters);
+    if (emptyClearButton) emptyClearButton.addEventListener('click', clearFilters);
+
+    if (filterToggle && filterPanel) {
+      filterToggle.addEventListener('click', function () {
+        var expanded = filterToggle.getAttribute('aria-expanded') === 'true';
+        filterToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        filterPanel.classList.toggle('hidden', expanded);
+        if (filterToggleLabel) filterToggleLabel.textContent = expanded ? '展开 +' : '收起 −';
+      });
+    }
+
+    var params = new URLSearchParams(location.search);
+    var sortParam = params.get('sort');
+    currentSort = validSorts[sortParam] ? sortParam : 'updated';
+
+    function checkValues(name, raw) {
+      if (!raw) return;
+      raw.split(',').forEach(function (value) {
+        if (!value) return;
+        for (var i = 0; i < filterInputs.length; i++) {
+          if (filterInputs[i].name === name && filterInputs[i].value === value) {
+            filterInputs[i].checked = true;
+            break;
+          }
+        }
+      });
+    }
+
+    checkValues('platform', params.get('platform'));
+    checkValues('genre', params.get('genre'));
+    sortBy(currentSort);
+    setPressed(currentSort);
+    applyFilters(false);
+    syncUrl();
   })();
 </script>

@@ -242,7 +242,18 @@ a.px-tag:hover {
   color: var(--color-bg-dark);
 }
 
-/* 首页标签筛选 */
+/* 筛选：当前组合下没有结果的选项 */
+.tag-filter.is-empty:not(:has(input:checked)) {
+  opacity: 0.45;
+}
+.tag-filter.is-empty:not(:has(input:checked)):hover {
+  border-color: var(--color-tint);
+}
+.dark .tag-filter.is-empty:not(:has(input:checked)):hover {
+  border-color: var(--color-tint-dark);
+}
+
+/* 标签 / 游戏书架筛选 */
 .tag-filter {
   display: inline-flex;
   align-items: center;
