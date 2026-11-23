@@ -76,7 +76,7 @@ INSERT INTO games (
   'wangzhe-wanxiangqi',
   '王者万象棋',
   NULL,
-  'https://img-tc.tapimg.com/market/images/0de7c12303076122c2414040fbd96f7e.png/_tap_appicon.jpg',
+  'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/02/5c/7a/025c7a40-b125-5ab9-1237-7283fcbf089a/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg',
   '王者荣耀 IP 的英雄策略对战游戏，以自走棋玩法为核心，2026 年 9 月上线。',
   '腾讯',
   '腾讯',
