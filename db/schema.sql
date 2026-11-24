@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS games (
   related_posts TEXT NOT NULL DEFAULT '[]',
   links         TEXT NOT NULL DEFAULT '[]', -- [{title, url, type, note, date}]
   timeline      TEXT NOT NULL DEFAULT '[]', -- [{version, date, summary, url}]
+  rating        REAL,                       -- 我的评分 0.0–10.0，NULL = 未评分
+  my_review     TEXT,                       -- 我的评价（短评）
   draft         INTEGER NOT NULL DEFAULT 0,
   row_updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

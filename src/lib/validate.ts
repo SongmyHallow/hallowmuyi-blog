@@ -55,6 +55,16 @@ function normalizeDate(value: unknown, error: string): string | undefined {
   return date;
 }
 
+/** 我的评分：0–10，最多一位小数；空值表示未评分 */
+function normalizeRating(value: unknown): number | undefined {
+  const s = text(value);
+  if (!s) return undefined;
+  const rating = Number(s);
+  if (!Number.isFinite(rating) || rating < 0 || rating > 10) fail('评分需要在 0 到 10 之间');
+  if (Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-9) fail('评分最小单位是 0.1');
+  return Math.round(rating * 10) / 10;
+}
+
 /** 去空、去空白、去重 */
 function uniqStrings(value: unknown): string[] {
   const out: string[] = [];
@@ -152,6 +162,8 @@ export function normalizeGame(slug: string, input: unknown): Game {
   const developer = optionalText(raw.developer);
   const publisher = optionalText(raw.publisher);
   const releaseDate = normalizeDate(raw.releaseDate, '发售日期不合法');
+  const rating = normalizeRating(raw.rating);
+  const myReview = optionalText(raw.myReview);
 
   return {
     slug,
@@ -172,6 +184,8 @@ export function normalizeGame(slug: string, input: unknown): Game {
     relatedPosts: uniqStrings(raw.relatedPosts),
     links,
     timeline,
+    ...(rating !== undefined ? { rating } : {}),
+    ...(myReview ? { myReview } : {}),
     draft: raw.draft === true || raw.draft === 'true',
   };
 }

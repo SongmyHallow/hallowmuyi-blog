@@ -86,5 +86,9 @@ export interface Game {
   relatedPosts: string[];
   links: GameLink[];
   timeline: GameTimeline[];
+  /** 我的评分，0–10，最多一位小数；未评分时不设置。 */
+  rating?: number;
+  /** 我的评价 / 短评，纯文本。 */
+  myReview?: string;
   draft: boolean;
 }

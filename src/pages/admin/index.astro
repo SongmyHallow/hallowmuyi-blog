@@ -164,6 +164,23 @@ export const prerender = true;
             class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark"></textarea>
         </label>
 
+        <div class="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 items-start">
+          <label class="block text-sm">
+            <span class="text-muted dark:text-muted-dark">我的评分（可选）</span>
+            <input id="g-rating" type="number" min="0" max="10" step="0.1" inputmode="decimal" placeholder="如 8.7"
+              class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark" />
+          </label>
+          <p class="text-xs leading-relaxed text-muted dark:text-muted-dark sm:pt-7">
+            0.0–10.0，最小单位 0.1；留空表示未评分，封面不显示角标。这里填的是你自己的评分，和下方「媒体评分」互不影响。
+          </p>
+        </div>
+
+        <label class="block text-sm">
+          <span class="text-muted dark:text-muted-dark">我的评价（可选）</span>
+          <textarea id="g-my-review" rows="4" placeholder="写一点对这款游戏的短评，换行会保留"
+            class="mt-1 w-full px-3 py-2 rounded border border-border dark:border-border-dark bg-transparent text-sm outline-none focus:border-accent dark:focus:border-accent-dark"></textarea>
+        </label>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label class="block text-sm">
             <span class="text-muted dark:text-muted-dark">开发商（可选）</span>
@@ -210,7 +227,7 @@ export const prerender = true;
 
         <div class="space-y-2">
           <div class="flex items-center justify-between gap-4 text-sm">
-            <span class="text-muted dark:text-muted-dark">评分（来源 + 评分）</span>
+            <span class="text-muted dark:text-muted-dark">媒体评分（来源 + 评分）</span>
             <button type="button" id="btn-add-score" class="text-accent dark:text-accent-dark hover:underline underline-offset-4 cursor-pointer">+ 添加评分</button>
           </div>
           <div id="g-scores" class="space-y-2"></div>
@@ -641,7 +658,7 @@ export const prerender = true;
             ${g.cover ? `<img src="${esc(g.cover)}" alt="" class="w-10 h-[3.4rem] object-cover border-2 border-border dark:border-border-dark shrink-0" />` : ''}
             <div class="min-w-0">
               <span class="block truncate">${esc(g.title || g.slug)}</span>
-              <span class="block font-mono text-xs text-muted dark:text-muted-dark truncate">${esc(g.slug)}</span>
+              <span class="block font-mono text-xs text-muted dark:text-muted-dark truncate">${esc(g.slug)}${g.rating != null ? ` · ★ ${Number(g.rating).toFixed(1)}` : ''}</span>
               ${g.draft ? '<span class="text-xs text-muted dark:text-muted-dark">草稿</span>' : ''}
             </div>
           </div>
@@ -797,7 +814,8 @@ export const prerender = true;
 
     function resetGameForm() {
       ['g-slug', 'g-title', 'g-original-title', 'g-cover', 'g-summary', 'g-developer', 'g-publisher',
-        'g-release-date', 'g-official-url', 'g-platforms', 'g-genres', 'g-related-posts'].forEach((id) => ($(id).value = ''));
+        'g-release-date', 'g-official-url', 'g-platforms', 'g-genres', 'g-related-posts',
+        'g-rating', 'g-my-review'].forEach((id) => ($(id).value = ''));
       $('g-added-date').value = today();
       $('g-draft').checked = false;
       updateCoverPreview();
@@ -816,6 +834,8 @@ export const prerender = true;
       $('g-platforms').value = (game.platforms || []).join(', ');
       $('g-genres').value = (game.genres || []).join(', ');
       $('g-official-url').value = game.officialUrl || '';
+      $('g-rating').value = game.rating == null ? '' : String(game.rating);
+      $('g-my-review').value = game.myReview || '';
       $('g-draft').checked = !!game.draft;
       $('g-related-posts').value = (game.relatedPosts || []).join(', ');
       (game.scores || []).forEach((d) => addScoreRow(d));
@@ -989,6 +1009,20 @@ export const prerender = true;
         status.textContent = '官网 URL 需以 http(s):// 开头';
         return;
       }
+      const ratingRaw = $('g-rating').value.trim();
+      let rating;
+      if (ratingRaw) {
+        const parsed = Number(ratingRaw);
+        if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10) {
+          status.textContent = '评分需要在 0 到 10 之间';
+          return;
+        }
+        if (Math.abs(parsed * 10 - Math.round(parsed * 10)) > 1e-9) {
+          status.textContent = '评分最小单位是 0.1';
+          return;
+        }
+        rating = Math.round(parsed * 10) / 10;
+      }
       if (!gameSlug && !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
         status.textContent = 'slug 只能包含小写字母、数字、连字符';
         return;
@@ -1010,6 +1044,8 @@ export const prerender = true;
         originalTitle: $('g-original-title').value.trim() || undefined,
         cover,
         summary: $('g-summary').value.trim() || undefined,
+        ...(rating === undefined ? {} : { rating }),
+        myReview: $('g-my-review').value.trim() || undefined,
         developer: $('g-developer').value.trim() || undefined,
         publisher: $('g-publisher').value.trim() || undefined,
         releaseDate: $('g-release-date').value || undefined,

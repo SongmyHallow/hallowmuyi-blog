@@ -22,6 +22,7 @@ const timeline = [...game.timeline].sort((a, b) => (a.date < b.date ? 1 : -1));
 
 // 基本信息：空值不显示
 const facts: { label: string; value: string }[] = [];
+if (game.rating !== undefined) facts.push({ label: '我的评分', value: `${game.rating.toFixed(1)} / 10` });
 if (game.developer) facts.push({ label: '开发商', value: game.developer });
 if (game.publisher) facts.push({ label: '发行商', value: game.publisher });
 if (game.releaseDate) facts.push({ label: '发售日期', value: formatGameDate(game.releaseDate) });
@@ -84,6 +85,13 @@ const sectionTitle =
       )}
     </div>
   </div>
+
+  {game.myReview && (
+    <section class="mt-10 border-t-2 border-dashed border-shadow pt-7 dark:border-border-dark">
+      <h2 class={sectionTitle}>我的评价</h2>
+      <p class="mt-1 max-w-[70ch] whitespace-pre-line break-words leading-loose">{game.myReview}</p>
+    </section>
+  )}
 
   <div class="mt-12 grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
     {game.scores.length > 0 && (

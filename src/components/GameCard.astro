@@ -26,6 +26,14 @@ const version = latestVersion(game);
       class="h-full w-full object-cover"
       onerror="this.style.display='none'"
     />
+    {game.rating !== undefined && (
+      <span
+        class="absolute left-1.5 top-1.5 border-2 border-border bg-panel px-1.5 py-1 font-pixel text-[10px] leading-none text-accent dark:border-border-dark dark:bg-panel-dark dark:text-accent-dark"
+        title={`我的评分 ${game.rating.toFixed(1)} / 10`}
+      >
+        <span aria-hidden="true">★</span>{game.rating.toFixed(1)}
+      </span>
+    )}
     {version && (
       <span class="absolute right-1.5 top-1.5 border-2 border-border bg-panel px-1.5 py-1 font-pixel text-[10px] leading-none dark:border-border-dark dark:bg-panel-dark">
         {version}

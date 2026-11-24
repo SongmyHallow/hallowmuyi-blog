@@ -1,6 +1,6 @@
 import type { Game } from '../lib/types';
 
-export type GameSort = 'shelf' | 'updated' | 'added' | 'release';
+export type GameSort = 'shelf' | 'rating-desc' | 'rating-asc' | 'updated' | 'added' | 'release';
 
 function toTime(date: string | undefined): number | undefined {
   if (!date) return undefined;
@@ -65,6 +65,27 @@ export function sortGames(games: Game[], sort: GameSort, shelfOrder: string[] = 
       return diff !== 0 ? diff : byTitle(a, b);
     });
     return [...listed, ...unlisted];
+  }
+  if (sort === 'rating-desc' || sort === 'rating-asc') {
+    const rank = new Map(shelfOrder.map((slug, index) => [slug, index]));
+    const direction = sort === 'rating-desc' ? -1 : 1;
+    const byShelf = (a: Game, b: Game): number => {
+      const ra = rank.get(a.slug);
+      const rb = rank.get(b.slug);
+      if (ra !== undefined && rb !== undefined && ra !== rb) return ra - rb;
+      if (ra !== undefined && rb === undefined) return -1;
+      if (ra === undefined && rb !== undefined) return 1;
+      return byTitle(a, b);
+    };
+    return sorted.sort((a, b) => {
+      const ra = a.rating;
+      const rb = b.rating;
+      if (ra === undefined && rb === undefined) return byShelf(a, b);
+      if (ra === undefined) return 1; // 未评分排最后
+      if (rb === undefined) return -1;
+      if (ra !== rb) return (ra - rb) * direction;
+      return byShelf(a, b);
+    });
   }
   if (sort === 'release') {
     return sorted.sort((a, b) => {

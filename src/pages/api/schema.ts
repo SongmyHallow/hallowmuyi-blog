@@ -7,7 +7,7 @@ import { DATE_RE, SLUG_RE } from '../../lib/validate';
  * 公开访问即可，内容不含任何密钥。
  */
 const schema = {
-  version: 2,
+  version: 3,
   auth: {
     browser: 'cookie hm_admin（POST /api/login {password}）',
     script: 'Authorization: Bearer <API_TOKEN>',
@@ -84,6 +84,12 @@ const schema = {
           required: false,
           note: '版本更新记录，按日期倒序展示',
         },
+        rating: {
+          type: 'number',
+          required: false,
+          note: '我的评分，0–10，最多一位小数；不传或为空表示未评分，封面不显示角标',
+        },
+        myReview: { type: 'string', required: false, note: '我的评价短评，换行会保留' },
         draft: { type: 'boolean', required: false, default: false },
       },
       response: { item: '{ game, version }', list: '{ games: [{ ...game, version }] }' },

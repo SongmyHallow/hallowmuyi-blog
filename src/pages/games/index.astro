@@ -30,7 +30,9 @@ const genreFacets = countFacets(games.map((game) => game.genres));
 
     {games.length > 0 && (
       <div id="game-sort" class="flex flex-wrap gap-2" role="group" aria-label="排序方式">
-        <button type="button" class="px-btn" data-sort="shelf" aria-pressed="true">书架顺序</button>
+        <button type="button" class="px-btn" data-sort="shelf" aria-pressed="true">默认</button>
+        <button type="button" class="px-btn" data-sort="rating-desc" aria-pressed="false" aria-label="评分从高到低" title="评分从高到低">评分 ↓</button>
+        <button type="button" class="px-btn" data-sort="rating-asc" aria-pressed="false" aria-label="评分从低到高" title="评分从低到高">评分 ↑</button>
         <button type="button" class="px-btn" data-sort="updated" aria-pressed="false">最近更新</button>
         <button type="button" class="px-btn" data-sort="added" aria-pressed="false">加入书架</button>
         <button type="button" class="px-btn" data-sort="release" aria-pressed="false">发售时间</button>
@@ -115,6 +117,7 @@ const genreFacets = countFacets(games.map((game) => game.genres));
               data-updated={lastUpdatedAt(game)}
               data-added={addedAtTime(game)}
               data-release={releaseTime(game) ?? 0}
+              data-rating={game.rating ?? ''}
               data-platforms={JSON.stringify(game.platforms)}
               data-genres={JSON.stringify(game.genres)}
             >
@@ -156,7 +159,7 @@ const genreFacets = countFacets(games.map((game) => game.genres));
     var filterToggleLabel = document.getElementById('game-filter-toggle-label');
     var total = cards.length;
     var currentSort = 'shelf';
-    var validSorts = { shelf: true, updated: true, added: true, release: true };
+    var validSorts = { shelf: true, 'rating-desc': true, 'rating-asc': true, updated: true, added: true, release: true };
 
     function attr(el, name) {
       return el.getAttribute(name) || '';
@@ -200,10 +203,21 @@ const genreFacets = countFacets(games.map((game) => game.genres));
           else diff = bv - av;
         } else if (key === 'shelf') {
           diff = (Number(attr(a, 'data-shelf')) || 0) - (Number(attr(b, 'data-shelf')) || 0);
+        } else if (key === 'rating-desc' || key === 'rating-asc') {
+          var ar = attr(a, 'data-rating');
+          var br = attr(b, 'data-rating');
+          if (ar === '' && br === '') diff = 0;
+          else if (ar === '') diff = 1;
+          else if (br === '') diff = -1;
+          else diff = (Number(ar) - Number(br)) * (key === 'rating-desc' ? -1 : 1);
         } else {
           diff = (Number(attr(b, 'data-' + key)) || 0) - (Number(attr(a, 'data-' + key)) || 0);
         }
         if (diff !== 0) return diff;
+        if (key === 'rating-desc' || key === 'rating-asc') {
+          var shelfDiff = (Number(attr(a, 'data-shelf')) || 0) - (Number(attr(b, 'data-shelf')) || 0);
+          if (shelfDiff !== 0) return shelfDiff;
+        }
         return attr(a, 'data-title').localeCompare(attr(b, 'data-title'), 'zh-CN');
       });
       items.forEach(function (el) {

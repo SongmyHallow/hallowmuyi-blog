@@ -60,6 +60,8 @@ interface GameRow {
   related_posts: string;
   links: string;
   timeline: string;
+  rating: number | null;
+  my_review: string | null;
   draft: number;
   row_updated_at?: string;
 }
@@ -112,6 +114,8 @@ function rowToGame(row: GameRow): Game {
     relatedPosts: parseJson<string[]>(row.related_posts, []),
     links: parseJson(row.links, []),
     timeline: parseJson(row.timeline, []),
+    ...(row.rating == null ? {} : { rating: Number(row.rating) }),
+    ...(row.my_review ? { myReview: row.my_review } : {}),
     draft: row.draft === 1,
   };
 }
@@ -257,7 +261,7 @@ export async function deletePost(slug: string, expectedVersion?: string | null):
 /* ------------------------------- 游戏 ------------------------------- */
 
 const GAME_COLUMNS =
-  'slug, title, original_title, cover, summary, developer, publisher, release_date, added_at, updated_at, platforms, genres, official_url, scores, related_posts, links, timeline, draft, row_updated_at';
+  'slug, title, original_title, cover, summary, developer, publisher, release_date, added_at, updated_at, platforms, genres, official_url, scores, related_posts, links, timeline, rating, my_review, draft, row_updated_at';
 
 function gameSearchClause(q: string | undefined, draftClause: string): { sql: string; binds: string[] } {
   const binds: string[] = [];
@@ -316,8 +320,8 @@ export async function saveGame(game: Game): Promise<string> {
     .prepare(
       `INSERT INTO games (slug, title, original_title, cover, summary, developer, publisher,
          release_date, added_at, updated_at, platforms, genres, official_url, scores,
-         related_posts, links, timeline, draft, row_updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ${VERSION_SQL})
+         related_posts, links, timeline, rating, my_review, draft, row_updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ${VERSION_SQL})
        ON CONFLICT(slug) DO UPDATE SET
          title = excluded.title,
          original_title = excluded.original_title,
@@ -335,6 +339,8 @@ export async function saveGame(game: Game): Promise<string> {
          related_posts = excluded.related_posts,
          links = excluded.links,
          timeline = excluded.timeline,
+         rating = excluded.rating,
+         my_review = excluded.my_review,
          draft = excluded.draft,
          row_updated_at = excluded.row_updated_at
        RETURNING row_updated_at`
@@ -357,6 +363,8 @@ export async function saveGame(game: Game): Promise<string> {
       JSON.stringify(game.relatedPosts),
       JSON.stringify(game.links),
       JSON.stringify(game.timeline),
+      game.rating ?? null,
+      game.myReview ?? null,
       game.draft ? 1 : 0
     )
     .first<{ row_updated_at: string }>();
